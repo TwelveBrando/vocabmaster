@@ -102,6 +102,10 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ error: 'Внутренняя ошибка сервера.' });
 });
 
-const server = app.listen(process.env.PORT || 3001, () => console.log(`VocabMaster API listens on :${process.env.PORT || 3001}`));
-const shutdown = async () => { server.close(); await pool.end(); };
-process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
+if (!process.env.VERCEL) {
+  const server = app.listen(process.env.PORT || 3001, () => console.log(`VocabMaster API listens on :${process.env.PORT || 3001}`));
+  const shutdown = async () => { server.close(); await pool.end(); };
+  process.once('SIGINT', shutdown); process.once('SIGTERM', shutdown);
+}
+
+export default app;

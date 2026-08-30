@@ -1,5 +1,20 @@
 # Развёртывание VocabMaster Web
 
+## Вариант Vercel + Neon (рекомендуемый для облачного запуска)
+
+На Vercel нужно создать **два проекта из одного GitHub-репозитория**: API и интерфейс. База остаётся отдельным облачным PostgreSQL.
+
+1. В [Neon](https://neon.tech) создайте Project → Postgres, затем в **Connect** скопируйте connection string (с `sslmode=require`).
+2. В Vercel нажмите **Add New → Project**, импортируйте репозиторий. Для первого проекта задайте **Root Directory: `web`**. Это API.
+3. В API-проекте откройте Settings → Environment Variables и добавьте для Production и Preview: `DATABASE_URL` (строка Neon), `JWT_SECRET` (длинное случайное значение), `CLIENT_ORIGIN` (на первом этапе можно временно поставить `http://localhost:5173`) и `NODE_ENV=production`.
+4. Deploy API. Запомните адрес, например `https://vocabmaster-api.vercel.app`. Откройте `https://.../api/health`.
+5. Один раз примените миграцию локально, временно записав тот же Neon URL в `web/.env`: `cd web; npm run migrate`. Это создаст таблицы.
+6. Создайте в Vercel второй проект с тем же репозиторием, но **Root Directory оставьте пустым**. Это интерфейс. В Build Command укажите `npx vite build --config web/client/vite.config.ts`, Output Directory — `web/client/dist`.
+7. В переменных окружения второго проекта добавьте `VITE_API_URL=https://vocabmaster-api.vercel.app/api`. Deploy.
+8. Скопируйте адрес интерфейса (например, `https://vocabmaster.vercel.app`) и замените `CLIENT_ORIGIN` в API-проекте на него. Повторно сделайте Deploy API.
+
+Не добавляйте `DATABASE_URL` или `JWT_SECRET` в GitHub или во frontend-проект: эти секреты должны быть только в настройках API Vercel.
+
 ## 1. Локальная подготовка PostgreSQL
 
 Создайте БД и пользователя в `psql`:
