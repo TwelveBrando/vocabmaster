@@ -97,6 +97,16 @@ app.post('/api/test-history', authenticate, async (req, res, next) => {
   } catch (error) { await client.query('ROLLBACK'); next(error); } finally { client.release(); }
 });
 
+app.get('/api/test-history', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, mode, total_questions AS "totalQuestions", correct_answers AS "correctAnswers", EXTRACT(EPOCH FROM completed_at) * 1000 AS "completedAt" FROM test_attempts WHERE user_id = $1 ORDER BY completed_at DESC LIMIT 20',
+      [req.user.id]
+    );
+    res.json({ attempts: rows.map(row => ({ ...row, totalQuestions: Number(row.totalQuestions), correctAnswers: Number(row.correctAnswers), completedAt: Number(row.completedAt) })) });
+  } catch (error) { next(error); }
+});
+
 app.use((error, _req, res, _next) => {
   console.error(error);
   res.status(500).json({ error: 'Внутренняя ошибка сервера.' });

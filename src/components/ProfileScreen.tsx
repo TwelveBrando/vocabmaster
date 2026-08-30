@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Check, Trash2, BookOpen, Layers, Award, Sparkles, Play, Loader2, FileInput } from 'lucide-react';
+import { Search, Plus, Check, Trash2, BookOpen, Layers, Award, Sparkles, Play, Loader2, FileInput, History } from 'lucide-react';
 import type { CEFRLevel, DictionaryEntry, UITheme, AISettings } from '../types';
 import { vocabularyService } from '../services/vocabularyService';
 import { CEFR_LEVELS_META } from '../data/cefrDictionary';
 import { THEMES } from '../styles/themes';
 import { ImportWordsModal } from './ImportWordsModal';
+import { cloudSyncService, type TestAttempt } from '../services/cloudSyncService';
 
 interface ProfileScreenProps {
   currentTheme: UITheme;
@@ -29,6 +30,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [history, setHistory] = useState<TestAttempt[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
 
@@ -70,6 +73,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   useEffect(() => {
     refreshVocabState();
+  }, []);
+
+  useEffect(() => {
+    if (!cloudSyncService.isLoggedIn()) return;
+    setIsHistoryLoading(true);
+    cloudSyncService.loadHistory().then(setHistory).catch(() => {}).finally(() => setIsHistoryLoading(false));
   }, []);
 
   const handleToggleWord = async (entry: DictionaryEntry) => {
@@ -217,6 +226,26 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {cloudSyncService.isLoggedIn() && (
+        <section className={`${theme.cardBg} ${theme.cardBorder} rounded-2xl border p-5 shadow-sm flex flex-col gap-4`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2"><History className={`w-5 h-5 ${theme.accentText}`} /><h3 className={`font-extrabold ${theme.textPrimary}`}>История тестов</h3></div>
+            <span className={`text-xs ${theme.textMuted}`}>Последние 20 попыток</span>
+          </div>
+          {isHistoryLoading ? <div className={`text-sm ${theme.textMuted}`}>Загружаем историю…</div> : history.length === 0 ? <div className={`text-sm ${theme.textMuted}`}>Завершите первый тест — его результат появится здесь.</div> : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {history.map(attempt => {
+                const accuracy = attempt.totalQuestions ? Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100) : 0;
+                return <div key={attempt.id} className={`rounded-xl border p-3 ${theme.isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/[0.03] border-white/10'}`}>
+                  <div className={`text-sm font-bold ${theme.textPrimary}`}>{accuracy}% · {attempt.correctAnswers}/{attempt.totalQuestions}</div>
+                  <div className={`text-xs mt-1 ${theme.textMuted}`}>{new Date(attempt.completedAt).toLocaleString('ru-RU')}</div>
+                </div>;
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Search & Filter Toolbar */}
       <div className="flex flex-col gap-3.5">

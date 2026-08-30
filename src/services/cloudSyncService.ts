@@ -3,6 +3,7 @@ import type { QuestionResult, TestMode, UserVocabularyItem } from '../types';
 const TOKEN_KEY = 'vocabmaster_web_token';
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
 export interface CloudUser { id: string; email: string; createdAt: string; }
+export interface TestAttempt { id: string; mode: TestMode; totalQuestions: number; correctAnswers: number; completedAt: number; }
 let token = localStorage.getItem(TOKEN_KEY) || '';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -29,4 +30,5 @@ export const cloudSyncService = {
   loadVocabulary: async () => (await request<{ items: UserVocabularyItem[] }>('/vocabulary')).items,
   saveVocabulary: async (items: UserVocabularyItem[]) => request<void>('/vocabulary', { method: 'PUT', body: JSON.stringify({ items }) }),
   saveHistory: async (mode: TestMode, results: QuestionResult[]) => request('/test-history', { method: 'POST', body: JSON.stringify({ mode, results: results.map(r => ({ word: r.question.originalWord, userAnswer: r.userAnswer, isCorrect: r.isCorrect, timeTakenMs: r.timeTakenMs })) }) }),
+  loadHistory: async () => (await request<{ attempts: TestAttempt[] }>('/test-history')).attempts,
 };
