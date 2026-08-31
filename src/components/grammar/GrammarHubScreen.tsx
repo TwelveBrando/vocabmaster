@@ -74,7 +74,7 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
         <div className="flex items-start gap-4 sm:gap-5 relative z-10">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
             theme.isLight 
-              ? 'bg-gradient-to-tr from-amber-600 to-orange-500 text-white' 
+              ? 'bg-gradient-to-tr from-amber-600 to-orange-500 text-white'
               : 'bg-gradient-to-tr from-amber-500 to-orange-400 text-white shadow-amber-500/25'
           }`}>
             <GraduationCap className="w-9 h-9" />
@@ -84,7 +84,7 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
             <div className="flex items-center gap-2">
               <span className={`text-xs uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-md border ${
                 theme.isLight 
-                  ? 'bg-amber-100 text-amber-900 border-amber-200' 
+                  ? 'bg-amber-100 text-amber-900 border-amber-200'
                   : 'bg-amber-950/35 text-amber-200 border-amber-400/25'
               }`}>
                 Уровень A1 • Elementary
