@@ -252,6 +252,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             )}
             <input
               type="text"
+              name="vocabulary-search"
+              autoComplete="off"
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);

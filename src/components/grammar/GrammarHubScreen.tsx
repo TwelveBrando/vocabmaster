@@ -137,6 +137,8 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
       <div className="relative">
         <input
           type="text"
+          name="grammar-search"
+          autoComplete="off"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Поиск по грамматическим темам (например: To Be, Present Simple, Артикли, Some/Any)..."
