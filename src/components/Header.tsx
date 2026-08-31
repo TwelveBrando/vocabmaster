@@ -61,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
-        <nav className="hidden items-center rounded-2xl border border-white/10 bg-white/[0.12] p-1 shadow-[0_12px_40px_rgb(0,0,0,0.2)] backdrop-blur-2xl md:flex" style={noDrag} aria-label="Основная навигация">
+        <nav className="app-nav hidden items-center rounded-[18px] border border-white/[0.08] bg-white/[0.10] p-1.5 shadow-[0_12px_32px_rgb(0,0,0,0.16)] backdrop-blur-2xl md:flex" style={noDrag} aria-label="Основная навигация">
           {items.map(({ id, label, icon: Icon }) => {
             const active = currentView === id;
             return (
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 key={id}
                 onClick={() => navigate(id)}
-                className={`relative flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium tracking-[-0.02em] transition-colors duration-300 ${active ? 'bg-white text-black shadow-sm' : 'text-white/60 hover:text-white'}`}
+                className={`relative flex items-center gap-2 rounded-xl px-4 py-[7px] text-xs font-medium tracking-[-0.02em] transition-colors duration-300 ${active ? 'bg-white text-black shadow-[0_3px_10px_rgb(0,0,0,0.12)]' : 'text-white/60 hover:text-white'}`}
               >
                 <Icon className="h-3.5 w-3.5" strokeWidth={1.8} />
                 {label}

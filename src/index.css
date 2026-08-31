@@ -99,6 +99,26 @@
   filter: blur(7px);
 }
 
+/* The navigation pill needs breathing room below its active item. This soft
+   shadow dissolves its lower edge instead of leaving a hard grey seam. */
+.app-nav {
+  position: relative;
+}
+
+.app-nav::after {
+  content: '';
+  position: absolute;
+  right: 13px;
+  bottom: -9px;
+  left: 13px;
+  height: 12px;
+  pointer-events: none;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 24%);
+  filter: blur(9px);
+  opacity: 0.72;
+}
+
 @keyframes importBackdropIn {
   from { opacity: 0; }
   to { opacity: 1; }
