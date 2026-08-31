@@ -114,6 +114,13 @@ interface DataPacket {
   size: number;
 }
 
+interface GlobePoint {
+  latitude: number;
+  longitude: number;
+  size: number;
+  phase: number;
+}
+
 export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -151,6 +158,28 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
     // Collections
     const brushStrokes: BrushPoint[] = [];
     const lightnings: LightningArc[] = [];
+    const globePoints: GlobePoint[] = Array.from({ length: 560 }, () => ({
+      latitude: Math.asin(Math.random() * 2 - 1),
+      longitude: Math.random() * Math.PI * 2,
+      size: Math.random() * 1.4 + 0.45,
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    // Mouse movement can arrive much faster than animation frames. Keep every
+    // physics-based theme bounded so a quick cursor spin never injects runaway
+    // velocity that makes particles impossible to recover.
+    const capVelocity = (particle: { vx: number; vy: number }, maxSpeed: number) => {
+      const speed = Math.hypot(particle.vx, particle.vy);
+      if (speed > maxSpeed) {
+        const ratio = maxSpeed / speed;
+        particle.vx *= ratio;
+        particle.vy *= ratio;
+      }
+    };
+
+    const capSpin = (particle: { spinSpeed: number }, maxSpin: number) => {
+      particle.spinSpeed = Math.max(-maxSpin, Math.min(maxSpin, particle.spinSpeed));
+    };
 
     // 1. Quantum Nodes
     const quantumNodes: QuantumNode[] = [];
@@ -348,6 +377,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           if (d < 140) {
             p.vx += (mouseVx * 0.15) * (1 - d / 140);
             p.vy += (mouseVy * 0.15) * (1 - d / 140);
+            capVelocity(p, 5);
           }
         }
       }
@@ -359,6 +389,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           if (d < 150) {
             s.vx += (mouseVx * 0.2) * (1 - d / 150);
             s.vy += (mouseVy * 0.2) * (1 - d / 150);
+            capVelocity(s, 4);
           }
         }
       }
@@ -372,7 +403,6 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
       shockwaveY = mouseY;
       clickShockwave = 1;
 
-      // Neon Brush
       if (theme === 'neon_brush') {
         const colors = ['#00f5ff', '#ff007f', '#a855f7', '#39ff14', '#ffd700'];
         brushStrokes.push({
@@ -398,6 +428,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
             const push = (1 - dist / 300) * 20;
             node.vx += (dx / dist) * push;
             node.vy += (dy / dist) * push;
+            capVelocity(node, 12);
           }
         }
       }
@@ -420,6 +451,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           const force = Math.max(5, 300 / dist);
           b.vx += (dx / dist) * force;
           b.vy += (dy / dist) * force;
+          capVelocity(b, 9);
         }
       }
 
@@ -433,6 +465,8 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
             p.vx += (dx / dist) * 12;
             p.vy += (dy / dist) * 12;
             p.spinSpeed += (Math.random() - 0.5) * 0.2;
+            capVelocity(p, 7);
+            capSpin(p, 0.12);
           }
         }
       }
@@ -453,9 +487,81 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
       ctx.clearRect(0, 0, width, height);
 
       // =========================================================================
-      // 1. NEON BRUSH (PAINTING ON LMB DRAG)
+      // 1. LANGUAGE EXPLORER — central interactive globe
       // =========================================================================
-      if (theme === 'neon_brush') {
+      if (theme === 'language_explorer') {
+        const radius = Math.min(width * 0.32, height * 0.42);
+        const centerX = width * 0.5;
+        const centerY = height * 0.55;
+        const rotation = frame * 0.0025 + ((mouseX / width) - 0.5) * 0.55;
+        const tilt = ((mouseY / height) - 0.5) * 0.2;
+        const halo = ctx.createRadialGradient(centerX, centerY, radius * 0.15, centerX, centerY, radius * 1.5);
+        halo.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+        halo.addColorStop(0.52, 'rgba(255, 255, 255, 0.035)');
+        halo.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = halo;
+        ctx.fillRect(centerX - radius * 1.5, centerY - radius * 1.5, radius * 3, radius * 3);
+        const sphere = ctx.createRadialGradient(centerX - radius * 0.3, centerY - radius * 0.35, radius * 0.05, centerX, centerY, radius);
+        sphere.addColorStop(0, '#f0f0ed');
+        sphere.addColorStop(0.2, '#a9aaa7');
+        sphere.addColorStop(0.66, '#3c3d3b');
+        sphere.addColorStop(1, '#070707');
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fillStyle = sphere;
+        ctx.fill();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.clip();
+        const project = (latitude: number, longitude: number) => {
+          const longitudeAtFrame = longitude + rotation;
+          const z = Math.cos(latitude) * Math.cos(longitudeAtFrame);
+          return {
+            x: centerX + Math.cos(latitude) * Math.sin(longitudeAtFrame) * radius,
+            y: centerY - Math.sin(latitude + tilt) * radius,
+            z,
+          };
+        };
+        ctx.lineWidth = 0.7;
+        for (let latitude = -60; latitude <= 60; latitude += 20) {
+          ctx.beginPath();
+          let visible = false;
+          for (let longitude = -180; longitude <= 180; longitude += 5) {
+            const p = project(latitude * Math.PI / 180, longitude * Math.PI / 180);
+            if (p.z > 0) {
+              if (!visible) { ctx.moveTo(p.x, p.y); visible = true; } else ctx.lineTo(p.x, p.y);
+            } else visible = false;
+          }
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+          ctx.stroke();
+        }
+        for (let longitude = -160; longitude <= 160; longitude += 24) {
+          ctx.beginPath();
+          let visible = false;
+          for (let latitude = -88; latitude <= 88; latitude += 4) {
+            const p = project(latitude * Math.PI / 180, longitude * Math.PI / 180);
+            if (p.z > 0) {
+              if (!visible) { ctx.moveTo(p.x, p.y); visible = true; } else ctx.lineTo(p.x, p.y);
+            } else visible = false;
+          }
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+          ctx.stroke();
+        }
+        for (const point of globePoints) {
+          const p = project(point.latitude, point.longitude);
+          if (p.z <= 0) continue;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, point.size * (0.7 + p.z * 0.45), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${(0.3 + p.z * 0.7) * (0.72 + Math.sin(frame * 0.025 + point.phase) * 0.28)})`;
+          ctx.fill();
+        }
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.72)';
+        ctx.stroke();
+      } else if (theme === 'neon_brush') {
         const bgGrad = ctx.createRadialGradient(mouseX, mouseY, 40, width / 2, height / 2, Math.max(width, height));
         bgGrad.addColorStop(0, '#0a102a');
         bgGrad.addColorStop(1, '#020308');
@@ -546,6 +652,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           n.vy += (n.originY - n.y) * 0.01;
           n.vx *= 0.94;
           n.vy *= 0.94;
+          capVelocity(n, 7);
           n.x += n.vx;
           n.y += n.vy;
 
@@ -679,6 +786,8 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           }
           shard.vx *= 0.98;
           shard.vy *= 0.98;
+          capVelocity(shard, 5);
+          capSpin(shard, 0.08);
 
           if (shard.x < -30) shard.x = width + 30;
           if (shard.x > width + 30) shard.x = -30;
@@ -753,6 +862,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           }
           b.vx *= 0.96;
           b.vy *= 0.96;
+          capVelocity(b, 5);
           b.x += b.vx;
           b.y += b.vy;
 
@@ -846,6 +956,8 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           s.x += s.vx;
           s.y += s.vy;
           s.angle += s.spinSpeed;
+          capVelocity(s, 3);
+          capSpin(s, 0.06);
 
           if (s.y > height + 20) {
             s.y = -20;
@@ -914,6 +1026,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
             lan.vx += (dx / dist) * 0.05;
           }
           lan.vx *= 0.97;
+          capVelocity(lan, 2);
 
           if (lan.y < -40) {
             lan.y = height + 40;
@@ -1021,6 +1134,8 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           p.y += p.vy;
           p.angle += p.spinSpeed;
           p.flip += p.flipSpeed;
+          capVelocity(p, 5);
+          capSpin(p, 0.08);
 
           if (p.x > width + 20) p.x = -20;
           if (p.y > height + 20) p.y = -20;
@@ -1065,6 +1180,7 @@ export const BackgroundCanvas: React.FC<BackgroundCanvasProps> = ({ theme }) => 
           b.vy += (Math.random() - 0.5) * 0.4;
           b.vx *= 0.96;
           b.vy *= 0.96;
+          capVelocity(b, 5);
           b.x += b.vx;
           b.y += b.vy;
 

@@ -3,6 +3,7 @@ export type TestMode = 'mode1_choice' | 'mode2_ru_to_en' | 'mode3_en_to_ru';
 export type AIProvider = 'gemini' | 'groq' | 'openrouter' | 'custom';
 
 export type UITheme =
+  | 'language_explorer'
   | 'neon_brush'
   | 'quantum_matrix'
   | 'cosmic_nebula'

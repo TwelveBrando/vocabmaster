@@ -191,7 +191,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
         <div className={`${theme.cardBg} ${theme.cardBorder} p-7 rounded-3xl shadow-xl flex flex-col gap-6 animate-fadeIn`}>
           {totalUserWords === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-8 gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white">
                 <BookOpen className="w-7 h-7" />
               </div>
               <div>
@@ -313,7 +313,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                     : 'bg-white/[0.06] border-white/10 text-slate-200 hover:bg-white/[0.12]'
                 }`}
               >
-                <ListOrdered className="w-4 h-4 text-cyan-400" />
+                <ListOrdered className="w-4 h-4 text-white" />
                 Пример с переводом
               </button>
               <button
@@ -325,7 +325,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                     : 'bg-white/[0.06] border-white/10 text-slate-200 hover:bg-white/[0.12]'
                 }`}
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
+                <Sparkles className="w-4 h-4 text-white" />
                 Через запятую
               </button>
               {inputText && (
@@ -366,7 +366,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             onClick={() => setSelectedMode('mode1_choice')}
             className={`p-6 rounded-2xl transition-all relative flex flex-col justify-between gap-4 cursor-pointer group text-left ${
               selectedMode === 'mode1_choice'
-                ? `${theme.cardBg} ${theme.cardBorder} ${theme.glowEffect} ring-2 ring-emerald-500/40`
+                ? `${theme.cardBg} ${theme.cardBorder} ${theme.glowEffect} ring-2 ring-white/50`
                 : theme.isLight
                 ? 'bg-white border-2 border-slate-200 hover:border-slate-400 hover:shadow-md text-slate-800 shadow-xs'
                 : 'bg-white/[0.03] border border-white/10 hover:border-white/20 text-slate-400'
@@ -400,7 +400,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             onClick={() => setSelectedMode('mode2_ru_to_en')}
             className={`p-6 rounded-2xl transition-all relative flex flex-col justify-between gap-4 cursor-pointer group text-left ${
               selectedMode === 'mode2_ru_to_en'
-                ? `${theme.cardBg} ${theme.cardBorder} ${theme.glowEffect} ring-2 ring-emerald-500/40`
+                ? `${theme.cardBg} ${theme.cardBorder} ${theme.glowEffect} ring-2 ring-white/50`
                 : theme.isLight
                 ? 'bg-white border-2 border-slate-200 hover:border-slate-400 hover:shadow-md text-slate-800 shadow-xs'
                 : 'bg-white/[0.03] border border-white/10 hover:border-white/20 text-slate-400'
@@ -434,7 +434,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             onClick={() => setSelectedMode('mode3_en_to_ru')}
             className={`p-6 rounded-2xl transition-all relative flex flex-col justify-between gap-4 cursor-pointer group text-left ${
               selectedMode === 'mode3_en_to_ru'
-                ? `${theme.cardBg} ${theme.cardBorder} ${theme.glowEffect} ring-2 ring-emerald-500/40`
+                ? `${theme.cardBg} ${theme.cardBorder} ${theme.glowEffect} ring-2 ring-white/50`
                 : theme.isLight
                 ? 'bg-white border-2 border-slate-200 hover:border-slate-400 hover:shadow-md text-slate-800 shadow-xs'
                 : 'bg-white/[0.03] border border-white/10 hover:border-white/20 text-slate-400'

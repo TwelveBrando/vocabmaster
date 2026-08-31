@@ -51,6 +51,18 @@ export const vocabularyService = {
     return Array.from(map.values());
   },
 
+  getDictionaryLevelCounts(): Record<CEFRLevel, number> {
+    const counts: Record<CEFRLevel, number> = { A1: 0, A2: 0, B1: 0, B2: 0, C1: 0, C2: 0 };
+    for (const entry of this.getAllDictionaryWords()) {
+      counts[entry.level]++;
+    }
+    return counts;
+  },
+
+  getDictionaryWordsForLevel(level: CEFRLevel): DictionaryEntry[] {
+    return this.getAllDictionaryWords().filter((entry) => entry.level === level);
+  },
+
   /**
    * Universal search across local dictionary + 150,000+ full English words API with AI and morphological translation
    */

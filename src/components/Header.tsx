@@ -8,7 +8,8 @@ import {
   Minus, 
   Square, 
   Copy, 
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import type { UITheme } from '../types';
 import { THEMES } from '../styles/themes';
@@ -38,12 +39,13 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
+  const isElectron = Boolean(window.electronAPI);
 
   useEffect(() => {
-    if (window.electronAPI?.isMaximized) {
+    if (isElectron && window.electronAPI?.isMaximized) {
       window.electronAPI.isMaximized().then(setIsMaximized).catch(() => {});
     }
-  }, []);
+  }, [isElectron]);
 
   const handleMinimize = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -64,12 +66,12 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header
       className="w-full select-none transition-all duration-300 relative z-30 px-3 sm:px-6 pt-3 pb-1"
-      style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+      style={isElectron ? { WebkitAppRegion: 'drag' } as React.CSSProperties : undefined}
     >
       <div className={`max-w-[1600px] mx-auto flex items-center justify-between px-3 sm:px-5 py-2 rounded-2xl border backdrop-blur-2xl transition-all duration-300 shadow-lg ${
         theme.isLight 
           ? 'bg-white/80 border-slate-200/80 shadow-slate-200/50' 
-          : 'bg-[#080d19]/80 border-white/[0.08] shadow-black/40'
+          : 'bg-black/45 border-white/15 shadow-black/40'
       }`}>
         {/* Left: Brand Identity with Subtle Pulse */}
         <div className="flex items-center gap-4 sm:gap-6">
@@ -79,10 +81,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onNavigate('test')}
           >
             <div className={`relative w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-md transition-transform duration-300 group-hover:scale-105 shrink-0 ${
-              theme.isLight ? 'bg-slate-900 shadow-slate-900/20' : 'bg-gradient-to-tr from-cyan-500 to-indigo-500 text-white shadow-cyan-500/25'
+              theme.isLight ? 'bg-slate-900 shadow-slate-900/20' : 'bg-white text-black shadow-white/10'
             }`}>
               <BookOpen className="w-4.5 h-4.5 transition-transform duration-300 group-hover:rotate-6" />
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[#080d19]" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-white border-2 border-black" />
             </div>
             
             <div className="flex flex-col">
@@ -117,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? `${theme.primaryButton} shadow-md scale-[1.02]`
                   : theme.isLight
                   ? 'text-slate-600 hover:text-slate-950 hover:bg-white/70'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/55 hover:text-white hover:bg-white/10'
               }`}
             >
               <Compass className={`w-3.5 h-3.5 ${currentView === 'test' ? 'animate-pulse' : ''}`} />
@@ -132,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? `${theme.primaryButton} shadow-md scale-[1.02]`
                   : theme.isLight
                   ? 'text-slate-600 hover:text-slate-950 hover:bg-white/70'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/55 hover:text-white hover:bg-white/10'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -147,7 +149,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? `${theme.primaryButton} shadow-md scale-[1.02]`
                   : theme.isLight
                   ? 'text-slate-600 hover:text-slate-950 hover:bg-white/70'
-                  : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                  : 'text-white/55 hover:text-white hover:bg-white/10'
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
@@ -157,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full transition-colors ${
                   currentView === 'profile'
                     ? 'bg-black/25 text-white'
-                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-white/10 text-white border border-white/20'
                 }`}>
                   {vocabCount}
                 </span>
@@ -173,9 +175,9 @@ export const Header: React.FC<HeaderProps> = ({
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium backdrop-blur-md ${
               theme.isLight
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300'
+                : 'bg-white/5 border-white/15 text-white/80'
             }`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
               <span>150k+ слов</span>
             </div>
 
@@ -183,17 +185,36 @@ export const Header: React.FC<HeaderProps> = ({
               <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium backdrop-blur-md ${
                 theme.isLight
                   ? 'bg-amber-50 border-amber-200 text-amber-900'
-                  : 'bg-amber-950/30 border-amber-500/20 text-amber-300'
-              }`}>
-                <Sparkles className="w-3 h-3 text-amber-400" />
+                : 'bg-white/5 border-white/15 text-white/80'
+            }`}>
+              <Sparkles className="w-3 h-3 text-white" />
                 <span>Кэш: <strong className="font-bold">{cachedCount}</strong></span>
               </div>
             )}
           </div>
 
-          <button type="button" onClick={cloudUser ? onSignOut : onOpenAuth} title={cloudUser ? 'Выйти из аккаунта' : 'Войти или зарегистрироваться'} className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
-            {cloudUser ? `☁ ${cloudUser.email}` : '☁ Войти'}
-          </button>
+          {cloudUser ? (
+            <>
+              <div title="Вы вошли в аккаунт" className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
+                ☁ {cloudUser.email}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Выйти из аккаунта на этом устройстве?')) onSignOut();
+                }}
+                title="Выйти из аккаунта"
+                aria-label="Выйти из аккаунта"
+                className={`w-8 h-8 rounded-xl border flex items-center justify-center text-xs font-bold cursor-pointer transition-all ${theme.navPillBg || 'bg-white/5 border-white/10'} hover:text-rose-500`}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={onOpenAuth} title="Войти или зарегистрироваться" className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
+              ☁ Войти
+            </button>
+          )}
 
           {/* Settings & Theme Trigger */}
           <button
@@ -205,13 +226,13 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <div className="relative flex items-center justify-center">
               <Palette className={`w-3.5 h-3.5 ${theme.accentText}`} />
-              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-white" />
             </div>
             <span className="hidden sm:inline">Оформление & ИИ</span>
           </button>
 
           {/* Modern Stylized Window Controls Bar */}
-          <div className={`flex items-center gap-1 ml-1 pl-2 border-l ${
+          {isElectron && <div className={`flex items-center gap-1 ml-1 pl-2 border-l ${
             theme.isLight ? 'border-slate-200' : 'border-white/10'
           }`}>
             <button
@@ -256,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <X className="w-3.5 h-3.5 stroke-[2.5] group-hover:rotate-90 transition-transform duration-150" />
             </button>
-          </div>
+          </div>}
         </div>
       </div>
     </header>

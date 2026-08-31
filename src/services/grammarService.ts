@@ -44,6 +44,7 @@ type FetchErrorBody = {
 };
 
 const EMPTY_HISTORY: GenerationHistory = { byLecture: {}, global: [] };
+const EXPANDED_LECTURE_MINUTES = 4;
 // These are grammatical glue words, not vocabulary supplied to the model. They
 // are excluded only when auditing repeated *content* words in AI output.
 const FUNCTION_WORDS = new Set([
@@ -53,6 +54,60 @@ const FUNCTION_WORDS = new Set([
   'had', 'not', 'no', 'to', 'of', 'in', 'on', 'at', 'by', 'for', 'from', 'with', 'as', 'into',
   'after', 'before', 'over', 'under', 'near', 'where', 'when', 'what', 'who', 'why', 'how',
 ]);
+
+function resolvedExerciseSentence(exercise: GrammarExercise): string | null {
+  if (exercise.type === 'find_mistake') {
+    const [wrong, correct] = exercise.correctAnswer.split(/\s*(?:→|->)\s*/);
+    return wrong && correct ? exercise.question.replace(wrong, correct) : null;
+  }
+  return exercise.question.includes('______')
+    ? exercise.question.replace('______', exercise.correctAnswer)
+    : exercise.question;
+}
+
+/**
+ * Every A1 lesson shares the same deeper finishing block. It turns the existing
+ * assessed examples into explained, correct sentences, so the learner sees the
+ * rule in context before opening the exercise sets.
+ */
+function enrichLecture(lecture: GrammarLecture): GrammarLecture {
+  const sourceExercises = [
+    ...lecture.exercises.multipleChoice.slice(0, 2),
+    ...lecture.exercises.fillBlank.slice(0, 2),
+  ];
+  const examples = sourceExercises
+    .map((exercise) => {
+      const english = resolvedExerciseSentence(exercise);
+      return english ? {
+        english,
+        russian: `Разбор: ${exercise.explanation}`,
+        note: exercise.hint,
+      } : null;
+    })
+    .filter((example): example is { english: string; russian: string; note: string } => example !== null);
+
+  return {
+    ...lecture,
+    readTimeMinutes: lecture.readTimeMinutes + EXPANDED_LECTURE_MINUTES,
+    contentSections: [
+      ...lecture.contentSections,
+      {
+        title: 'Практика в контексте: разбираем четыре примера',
+        paragraphs: [
+          'Недостаточно просто выучить формулу: сначала прочитайте каждое предложение целиком, определите подлежащее и только затем назовите правило. Такой порядок помогает перестать переводить фразу слово за словом.',
+          'Сверьте своё решение с разбором под примером. Если ответ оказался неверным, проговорите исправленный вариант вслух и составьте ещё один похожий пример о себе. Это превращает правило из таблицы в навык.',
+          'Мини-проверка перед упражнениями: могу ли я объяснить, почему здесь именно эта форма, и могу ли я заменить подлежащее так, чтобы форма изменилась правильно? Если да — переходите к тесту.',
+        ],
+        examples,
+        callout: {
+          type: 'note',
+          title: 'Как работать с примерами',
+          text: 'Закройте строку «Разбор», ответьте самостоятельно, а затем проверьте себя. Ошибка здесь — полезная подсказка, а не потерянный балл.',
+        },
+      },
+    ],
+  };
+}
 
 const exerciseSchema = {
   type: 'object',
@@ -208,15 +263,23 @@ function readableApiError(provider: AIProvider, status: number, rawBody: string)
 
 export class GrammarService {
   getA1Topics(): GrammarTopic[] {
-    return GRAMMAR_A1_TOPICS;
+    return GRAMMAR_A1_TOPICS.map((topic) => ({
+      ...topic,
+      subtopics: topic.subtopics.map((subtopic) => ({
+        ...subtopic,
+        readTimeMinutes: subtopic.readTimeMinutes + EXPANDED_LECTURE_MINUTES,
+      })),
+    }));
   }
 
   getLectureById(lectureId: string): GrammarLecture | null {
-    return GRAMMAR_A1_LECTURES[lectureId] || null;
+    const lecture = GRAMMAR_A1_LECTURES[lectureId];
+    return lecture ? enrichLecture(lecture) : null;
   }
 
   getLectureBySubtopicId(subtopicId: string): GrammarLecture | null {
-    return Object.values(GRAMMAR_A1_LECTURES).find((lecture) => lecture.subtopicId === subtopicId) || null;
+    const lecture = Object.values(GRAMMAR_A1_LECTURES).find((candidate) => candidate.subtopicId === subtopicId);
+    return lecture ? enrichLecture(lecture) : null;
   }
 
   findTopicBySubtopicId(subtopicId: string): { topic: GrammarTopic; subtopicIndex: number } | null {

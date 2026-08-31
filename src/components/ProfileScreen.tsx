@@ -21,7 +21,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onStartVocabularyTest,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState<CEFRLevel | 'all'>('all');
   const [selectedLetter, setSelectedLetter] = useState<string>('');
   const [onlySaved, setOnlySaved] = useState(false);
   const [userVocabWords, setUserVocabWords] = useState<Set<string>>(new Set());
@@ -47,7 +46,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setIsLoading(true);
       try {
         const queryTerm = searchQuery.trim() || (selectedLetter ? selectedLetter.toLowerCase() : '');
-        const results = await vocabularyService.searchDictionaryUniversal(queryTerm, selectedLevel, settings);
+        const results = await vocabularyService.searchDictionaryUniversal(queryTerm, 'all', settings);
         if (!isCancelled) {
           if (onlySaved) {
             const vocab = vocabularyService.getUserVocabulary();
@@ -69,7 +68,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [searchQuery, selectedLevel, selectedLetter, onlySaved, settings]);
+  }, [searchQuery, selectedLetter, onlySaved, settings]);
 
   useEffect(() => {
     refreshVocabState();
@@ -83,12 +82,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const handleToggleWord = async (entry: DictionaryEntry) => {
     await vocabularyService.toggleWordInVocabulary(entry);
-    refreshVocabState();
-  };
-
-  const handleAddLevelBatch = (level: CEFRLevel) => {
-    const wordsOfLevel = dictionaryList.filter(item => item.level === level);
-    vocabularyService.addBatchToVocabulary(wordsOfLevel);
     refreshVocabState();
   };
 
@@ -116,8 +109,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setIsSearchingAI(false);
     }
   };
-
-  const levelsList: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
   return (
     <div className="w-full max-w-[1550px] mx-auto px-6 sm:px-10 py-8 flex flex-col gap-7 animate-fadeIn h-full flex-1 min-h-0 overflow-y-auto relative z-10 select-none">
@@ -150,7 +141,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {stats.totalWords > 0 && (
             <button
               type="button"
-              onClick={() => onStartVocabularyTest(selectedLevel)}
+              onClick={() => onStartVocabularyTest('all')}
               className={`h-11 px-6 rounded-xl font-bold text-sm shadow-md flex items-center gap-2.5 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
             >
               <Play className="w-4 h-4 fill-current" />
@@ -339,68 +330,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           })}
         </div>
 
-        {/* Level Filters + Quick Actions */}
-        <div className="flex items-center justify-between gap-3 overflow-x-auto pb-1">
-          <div className={`flex items-center gap-1.5 p-1.5 rounded-2xl border shadow-xs ${
-            theme.isLight ? 'bg-slate-200/80 border-slate-300' : 'bg-black/40 border-white/10'
-          }`}>
-            {levelsList.map((lvl) => {
-              const isActive = selectedLevel === lvl;
-              const meta = lvl !== 'all' ? CEFR_LEVELS_META[lvl] : null;
-
-              return (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => setSelectedLevel(lvl)}
-                  className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
-                    isActive
-                      ? `${theme.primaryButton} shadow-sm`
-                      : theme.isLight
-                      ? 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-950 shadow-2xs'
-                      : 'bg-white/[0.04] border border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {meta && (
-                    <span
-                      className="w-2.5 h-2.5 rounded-full ring-1 ring-black/20 dark:ring-white/30 shadow-xs shrink-0"
-                      style={{ backgroundColor: meta.colorHex }}
-                    />
-                  )}
-                  <span>{lvl === 'all' ? 'Все уровни' : lvl}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Quick Batch Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            {selectedLevel !== 'all' && dictionaryList.length > 0 && (
-              <button
-                type="button"
-                onClick={() => handleAddLevelBatch(selectedLevel)}
-                className={`px-4 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98 ${
-                  theme.isLight
-                    ? 'bg-emerald-100 hover:bg-emerald-200 border-emerald-400 text-emerald-950'
-                    : 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-500/30 text-emerald-300'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                <span>Добавить {selectedLevel} ({dictionaryList.length})</span>
-              </button>
-            )}
-
-            {userVocabWords.size > 0 && (
-              <button
-                type="button"
-                onClick={handleClearAll}
-                className="px-3 py-2 rounded-xl text-xs font-medium text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer"
-                title="Очистить весь словарный запас"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+        <div className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${
+          theme.isLight ? 'bg-slate-100/80 border-slate-200 text-slate-600' : 'bg-white/[0.03] border-white/10 text-slate-400'
+        }`}>
+          <p className="text-xs leading-relaxed">
+            В каталоге нет искусственного «выбора уровня»: уровни у слов — ориентир сложности, а поиск находит слова из полного доступного словаря.
+          </p>
+          {userVocabWords.size > 0 && (
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="px-3 py-2 rounded-xl text-xs font-medium text-rose-500 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 transition-all cursor-pointer shrink-0"
+              title="Очистить весь словарный запас"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

@@ -32,13 +32,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       const freshSettings = settingsService.getSettings();
-      setFormData(freshSettings);
+      setFormData({ ...freshSettings, theme: 'language_explorer' });
     }
   }, [isOpen, settings]);
 
   if (!isOpen) return null;
 
-  const currentThemeConfig = THEMES[formData.theme] || THEMES.cyber_oasis;
+  const currentThemeConfig = THEMES.language_explorer;
 
   // Auto-save helper to guarantee no keys are ever lost
   const persistChanges = (updated: AISettings) => {
@@ -160,22 +160,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const allThemesList: UITheme[] = [
-    'neon_brush',
-    'quantum_matrix',
-    'cosmic_nebula',
-    'cyber_vortex',
-    'golden_ember',
-    'aurora_borealis',
-    'retro_synthwave',
-    'sakura_petals',
-    'cyber_oasis',
-    'frosted_glass',
-    'bento_luxury',
-    'emerald_synth',
-    'nordic_paper',
-    'sakura_sunset',
-  ];
+  const allThemesList: UITheme[] = ['language_explorer'];
 
   const providersList: { id: AIProvider; label: string; desc: string; link: string; placeholder: string }[] = [
     { id: 'gemini', label: 'Google Gemini', desc: 'Flash-Lite • Free tier', link: 'aistudio.google.com/app/apikey', placeholder: 'AIzaSy...' },
@@ -523,12 +508,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: 14 Themes */}
+          {/* Section 3: unified visual mode */}
           <div className="flex flex-col gap-4 pt-4 border-t border-slate-200/50 dark:border-white/10">
             <div className="flex items-center justify-between">
               <label className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${currentThemeConfig.textMuted}`}>
                 <Palette className={`w-4 h-4 ${currentThemeConfig.accentText}`} />
-                Выберите тему оформления (14 тем)
+                Оформление приложения
               </label>
               <span className={`text-xs font-bold ${currentThemeConfig.accentText}`}>
                 Активна: {currentThemeConfig.name}

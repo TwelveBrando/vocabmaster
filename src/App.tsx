@@ -6,11 +6,12 @@ import { PreparationScreen } from './components/PreparationScreen';
 import { TestScreen } from './components/TestScreen';
 import { ResultScreen } from './components/ResultScreen';
 import { SettingsModal } from './components/SettingsModal';
-import { BackgroundCanvas } from './components/BackgroundCanvas';
+import LiquidMetalHero from './components/ui/liquid-metal-hero';
+import { LiquidMetal, liquidMetalPresets } from '@paper-design/shaders-react';
 import { GrammarHubScreen } from './components/grammar/GrammarHubScreen';
 import { GrammarLectureScreen } from './components/grammar/GrammarLectureScreen';
 import { AuthModal } from './components/AuthModal';
-import type { TestMode, AISettings, TestQuestion, QuestionResult, CachedWordData, CEFRLevel } from './types';
+import type { TestMode, AISettings, TestQuestion, QuestionResult, CachedWordData, CEFRLevel, UITheme } from './types';
 import type { GrammarLecture } from './types/grammar';
 import { grammarService } from './services/grammarService';
 import { settingsService } from './services/settingsService';
@@ -18,7 +19,9 @@ import { cacheService } from './services/cacheService';
 import { vocabularyService } from './services/vocabularyService';
 import { AIService } from './services/aiService';
 import { buildTestQuestions } from './services/testBuilder';
-import { parseVocabularyInput } from './services/wordParser';
+import { determineWordCEFRLevel, parseVocabularyInput } from './services/wordParser';
+import { getSmartFallbackDistractors } from './services/distractorPool';
+import { translatorService } from './services/translatorService';
 import { THEMES } from './styles/themes';
 import { cloudSyncService, type CloudUser } from './services/cloudSyncService';
 
@@ -34,6 +37,7 @@ export function App() {
   const [vocabCount, setVocabCount] = useState(0);
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isWelcomeScreenOpen, setIsWelcomeScreenOpen] = useState(true);
 
   // Grammar Module State
   const [currentGrammarLecture, setCurrentGrammarLecture] = useState<GrammarLecture | null>(null);
@@ -51,8 +55,10 @@ export function App() {
   const [testResults, setTestResults] = useState<QuestionResult[]>([]);
   const [currentWordsData, setCurrentWordsData] = useState<CachedWordData[]>([]);
 
-  const currentTheme = settings.theme || 'cyber_oasis';
-  const currentThemeConfig = THEMES[currentTheme] || THEMES.cyber_oasis;
+  // The visual system is intentionally unified for now. Older saved themes are
+  // preserved in settings but no longer applied to the web or desktop UI.
+  const currentTheme: UITheme = 'language_explorer';
+  const currentThemeConfig = THEMES.language_explorer;
 
   const refreshCounts = useCallback(() => {
     setCachedCount(cacheService.getAllCachedWords().length);
@@ -118,20 +124,24 @@ export function App() {
     if (!hasApiKey) {
       const dataWithSmartDistractors: CachedWordData[] = parsed.isFormattedWithTranslations
         ? parsed.wordsData
-        : inputItems.map(item => {
+        : await Promise.all(inputItems.map(async (item) => {
             const eng = typeof item === 'string' ? item : item.english;
-            const cached = cacheService.getWord(eng);
-            if (cached) return cached;
+            // Do not reuse the old test cache here: it can contain a stale or
+            // malformed AI answer. The translation pipeline has its own cache
+            // and always validates against the built-in dictionary first.
+            const translation = await translatorService.translateWord(eng, settings);
+            const russian = translation.russian || eng;
             return {
               english: eng,
-              russian: eng,
-              disambiguationHint: eng,
-              distractors: ['вариант 1', 'вариант 2', 'вариант 3', 'вариант 4', 'вариант 5', 'вариант 6'],
-              acceptableRussian: [eng],
+              russian,
+              disambiguationHint: translation.disambiguationHint || russian,
+              distractors: getSmartFallbackDistractors(russian, 6, eng),
+              acceptableRussian: [russian],
               acceptableEnglish: [eng.toLowerCase()],
+              level: determineWordCEFRLevel(eng),
               timestamp: Date.now(),
             };
-          });
+          }));
 
       cacheService.saveBatchWords(dataWithSmartDistractors);
       refreshCounts();
@@ -253,10 +263,30 @@ export function App() {
 
   const isGrammarActive = appState === 'grammar_hub' || appState === 'grammar_lecture';
 
+  if (isWelcomeScreenOpen) {
+    return (
+      <LiquidMetalHero
+        badge="VocabMaster · интерактивное обучение"
+        title="Учи слова. Понимай язык."
+        subtitle="Персональный тренажёр английской лексики и грамматики — с тестами, словарём и понятными уроками."
+        primaryCtaLabel="Начать тренировку"
+        secondaryCtaLabel="Открыть словарь"
+        onPrimaryCtaClick={() => setIsWelcomeScreenOpen(false)}
+        onSecondaryCtaClick={() => {
+          setAppState('profile');
+          setIsWelcomeScreenOpen(false);
+        }}
+        features={["Тесты по вашим словам", "Грамматика A1", "Личный словарь"]}
+      />
+    );
+  }
+
   return (
-    <div className={`h-screen ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
-      {/* Dynamic 60fps Ambient Canvas */}
-      <BackgroundCanvas theme={currentTheme} />
+    <div className={`liquid-metal-app h-screen ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.35} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }} />
+        <div className="absolute inset-0 bg-black/45" />
+      </div>
 
       {/* Header with Navigation */}
       <Header
@@ -276,7 +306,7 @@ export function App() {
       />
 
       {/* Main Content Screens */}
-      <main className="flex-1 min-h-0 relative overflow-hidden flex flex-col">
+      <main className="z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
         {appState === 'setup' && (
           <SetupScreen
             initialText={sessionState.inputText}

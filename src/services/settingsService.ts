@@ -18,7 +18,7 @@ const DEFAULT_SETTINGS: AISettings = {
   yandexApiKey: '',
   model: 'gemini-3.5-flash-lite',
   baseUrl: 'http://localhost:11434/v1',
-  theme: 'cyber_oasis',
+  theme: 'language_explorer',
   soundEnabled: true,
   autoAdvanceCorrect: true,
   autoAdvanceDelayMs: 450,

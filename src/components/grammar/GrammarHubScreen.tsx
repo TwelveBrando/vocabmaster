@@ -67,7 +67,7 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-8 py-5 flex flex-col gap-6 h-full flex-1 min-h-0 overflow-y-auto select-none animate-fadeIn relative z-10">
       {/* Top Banner: Level A1 & Progress Hub */}
-      <div className={`${theme.cardBg} ${theme.cardBorder} rounded-3xl p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-xl backdrop-blur-2xl transition-all relative overflow-hidden`}>
+      <div className={`${theme.cardBg} ${theme.cardBorder} rounded-3xl p-5 sm:p-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-5 sm:gap-6 shadow-xl backdrop-blur-2xl transition-all relative overflow-hidden shrink-0`}>
         {/* Glow effect */}
         <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
 
@@ -105,7 +105,7 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
         </div>
 
         {/* Progress Card */}
-        <div className={`w-full lg:w-72 p-4 rounded-2xl border shrink-0 flex flex-col gap-2.5 relative z-10 ${
+        <div className={`w-full xl:w-72 p-4 rounded-2xl border shrink-0 flex flex-col gap-2.5 relative z-10 ${
           theme.isLight ? 'bg-white/80 border-slate-200/80 shadow-sm' : 'bg-black/20 border-white/10'
         }`}>
           <div className="flex items-center justify-between text-xs font-bold">
