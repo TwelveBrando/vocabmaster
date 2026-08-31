@@ -60,6 +60,7 @@ export function App() {
   const [cachedCount, setCachedCount] = useState(0);
   const [vocabCount, setVocabCount] = useState(0);
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
+  const [vocabularyRevision, setVocabularyRevision] = useState(0);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isWelcomeScreenOpen, setIsWelcomeScreenOpen] = useState(true);
 
@@ -89,16 +90,23 @@ export function App() {
     setVocabCount(vocabularyService.getUserVocabulary().length);
   }, []);
 
-  const hydrateCloudVocabulary = useCallback(async (user: CloudUser) => {
+  const hydrateCloudVocabulary = useCallback(async () => {
     const remote = await cloudSyncService.loadVocabulary();
     const merged = mergeVocabulary(remote, vocabularyService.getUserVocabulary());
     // Do not let a fresh browser's empty localStorage overwrite the account before
     // its cloud vocabulary has been loaded and merged.
     vocabularyService.saveUserVocabulary(merged, false);
-    await cloudSyncService.saveVocabulary(merged);
-    setCloudUser(user);
     refreshCounts();
+    setVocabularyRevision((revision) => revision + 1);
+    await cloudSyncService.saveVocabulary(merged);
   }, [refreshCounts]);
+
+  const startCloudSession = useCallback((user: CloudUser) => {
+    setCloudUser(user);
+    void hydrateCloudVocabulary().catch(() => {
+      // Authentication is still valid even if a later vocabulary sync is temporarily unavailable.
+    });
+  }, [hydrateCloudVocabulary]);
 
   useEffect(() => {
     refreshCounts();
@@ -113,9 +121,9 @@ export function App() {
   useEffect(() => {
     cloudSyncService.currentUser().then(async (user) => {
       if (!user) return;
-      await hydrateCloudVocabulary(user);
+      startCloudSession(user);
     }).catch(() => {});
-  }, [hydrateCloudVocabulary]);
+  }, [startCloudSession]);
 
   const handleSaveSettings = (newSettings: AISettings) => {
     setSettings(newSettings);
@@ -358,6 +366,7 @@ export function App() {
             key={cloudUser?.id || 'guest'}
             currentTheme={currentTheme}
             settings={settings}
+            vocabularyRevision={vocabularyRevision}
             onStartVocabularyTest={(level) => {
               startVocabularyBankTest(level, 20, sessionState.mode, sessionState.numOptions);
             }}
@@ -422,7 +431,7 @@ export function App() {
         onSave={handleSaveSettings}
         onCacheUpdated={refreshCounts}
       />
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} theme={currentTheme} onAuthenticated={hydrateCloudVocabulary} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} theme={currentTheme} onAuthenticated={startCloudSession} />
     </div>
   );
 }

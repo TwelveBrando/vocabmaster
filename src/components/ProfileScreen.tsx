@@ -10,6 +10,7 @@ import { cloudSyncService, type TestAttempt } from '../services/cloudSyncService
 interface ProfileScreenProps {
   currentTheme: UITheme;
   settings: AISettings;
+  vocabularyRevision: number;
   onStartVocabularyTest: (level?: CEFRLevel | 'all') => void;
 }
 
@@ -18,6 +19,7 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   currentTheme,
   settings,
+  vocabularyRevision,
   onStartVocabularyTest,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,11 +70,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [searchQuery, selectedLetter, onlySaved, settings]);
+  }, [searchQuery, selectedLetter, onlySaved, settings, vocabularyRevision]);
 
   useEffect(() => {
     refreshVocabState();
-  }, []);
+  }, [vocabularyRevision]);
 
   useEffect(() => {
     if (!cloudSyncService.isLoggedIn()) return;

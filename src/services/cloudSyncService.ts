@@ -2,18 +2,31 @@ import type { QuestionResult, TestMode, UserVocabularyItem } from '../types';
 
 const TOKEN_KEY = 'vocabmaster_web_token';
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+const REQUEST_TIMEOUT_MS = 12_000;
 export interface CloudUser { id: string; email: string; createdAt: string; }
 export interface TestAttempt { id: string; mode: TestMode; totalQuestions: number; correctAnswers: number; completedAt: number; }
 let token = localStorage.getItem(TOKEN_KEY) || '';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers },
-  });
-  const body = response.status === 204 ? null : await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || 'Ошибка соединения с сервером.');
-  return body as T;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init.headers },
+    });
+    const body = response.status === 204 ? null : await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || 'Ошибка соединения с сервером.');
+    return body as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Сервер не ответил за 12 секунд. Проверьте подключение и повторите попытку.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export const cloudSyncService = {
