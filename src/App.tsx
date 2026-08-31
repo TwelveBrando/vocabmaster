@@ -88,7 +88,7 @@ export function App() {
   const currentTheme: UITheme = 'language_explorer';
   const currentThemeConfig = THEMES.language_explorer;
 
-  useSmoothScroll(scrollWrapperRef, scrollContentRef);
+  useSmoothScroll(scrollWrapperRef, scrollContentRef, !isWelcomeScreenOpen);
 
   const refreshCounts = useCallback(() => {
     setCachedCount(cacheService.getAllCachedWords().length);
