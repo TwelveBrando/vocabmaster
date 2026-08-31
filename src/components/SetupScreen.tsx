@@ -138,7 +138,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
     : vocabStats.byLevel[bankLevel] || 0;
 
   return (
-    <div className="w-full max-w-[1550px] mx-auto px-6 sm:px-10 py-8 flex flex-col gap-8 animate-fadeIn h-full flex-1 min-h-0 overflow-y-auto relative z-10">
+    <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-[1550px] flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 animate-fadeIn sm:gap-8 sm:px-10 sm:py-8">
       {/* Top Banner & Source Selector */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-slate-200/50 dark:border-white/[0.08]">
         <div>
@@ -151,13 +151,13 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
         </div>
 
         {/* Source Switcher Pill */}
-        <div className={`flex items-center gap-2 p-1.5 rounded-2xl border self-start md:self-auto shadow-xs ${
+        <div className={`flex w-full max-w-full items-center gap-1 p-1.5 rounded-2xl border self-start md:w-auto md:self-auto shadow-xs ${
           theme.isLight ? 'bg-slate-200/90 border-slate-300' : 'bg-black/40 border-white/10'
         }`}>
           <button
             type="button"
             onClick={() => setSourceType('vocab_bank')}
-            className={`px-5 py-2.5 rounded-xl text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
+            className={`min-w-0 flex-1 md:flex-none px-3 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
               sourceType === 'vocab_bank'
                 ? `${theme.primaryButton} shadow-sm`
                 : theme.isLight
@@ -166,13 +166,14 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             }`}
           >
             <BookOpen className="w-4 h-4" />
-            <span>Мой словарный запас ({totalUserWords})</span>
+            <span className="truncate md:hidden">Мой словарь ({totalUserWords})</span>
+            <span className="hidden md:inline">Мой словарный запас ({totalUserWords})</span>
           </button>
 
           <button
             type="button"
             onClick={() => setSourceType('custom_input')}
-            className={`px-5 py-2.5 rounded-xl text-sm font-extrabold transition-all cursor-pointer flex items-center gap-2.5 ${
+            className={`min-w-0 flex-1 md:flex-none px-3 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all cursor-pointer flex items-center justify-center gap-2 ${
               sourceType === 'custom_input'
                 ? `${theme.primaryButton} shadow-sm`
                 : theme.isLight
@@ -181,7 +182,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Вставить свой список</span>
+            <span className="md:hidden">Свой список</span>
+            <span className="hidden md:inline">Вставить свой список</span>
           </button>
         </div>
       </div>

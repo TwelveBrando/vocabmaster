@@ -65,16 +65,16 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className="w-full select-none transition-all duration-300 relative z-30 px-3 sm:px-6 pt-3 pb-1"
+      className="relative z-30 w-full select-none px-2 pb-1 pt-2 transition-all duration-300 sm:px-6 sm:pt-3"
       style={isElectron ? { WebkitAppRegion: 'drag' } as React.CSSProperties : undefined}
     >
-      <div className={`max-w-[1600px] mx-auto flex items-center justify-between px-3 sm:px-5 py-2 rounded-2xl border backdrop-blur-2xl transition-all duration-300 shadow-lg ${
+      <div className={`mx-auto flex max-w-[1600px] flex-col gap-2 rounded-2xl border px-2.5 py-2 shadow-lg backdrop-blur-2xl transition-all duration-300 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${
         theme.isLight 
           ? 'bg-white/80 border-slate-200/80 shadow-slate-200/50' 
           : 'bg-black/45 border-white/15 shadow-black/40'
       }`}>
         {/* Left: Brand Identity with Subtle Pulse */}
-        <div className="flex items-center gap-4 sm:gap-6">
+        <div className="flex min-w-0 w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-6">
           <div 
             className="flex items-center gap-3 cursor-pointer group" 
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Navigation Island (Floating Pill Switcher) */}
           <nav
-            className={`flex items-center p-1 rounded-xl border transition-all ${
+            className={`flex w-full min-w-0 items-center gap-0.5 overflow-x-auto p-1 rounded-xl border transition-all sm:w-auto ${
               theme.isLight ? 'bg-slate-100/90 border-slate-200/70' : 'bg-white/[0.04] border-white/[0.07]'
             }`}
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -114,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('test')}
-              className={`relative px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+              className={`relative shrink-0 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
                 currentView === 'test'
                   ? `${theme.primaryButton} shadow-md scale-[1.02]`
                   : theme.isLight
@@ -123,13 +123,13 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Compass className={`w-3.5 h-3.5 ${currentView === 'test' ? 'animate-pulse' : ''}`} />
-              <span>Тестирование</span>
+              <span className="hidden min-[420px]:inline">Тестирование</span>
             </button>
 
             <button
               type="button"
               onClick={() => onNavigate('grammar')}
-              className={`relative px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+              className={`relative shrink-0 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
                 currentView === 'grammar'
                   ? `${theme.primaryButton} shadow-md scale-[1.02]`
                   : theme.isLight
@@ -138,13 +138,13 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Грамматика A1</span>
+              <span className="hidden min-[420px]:inline">Грамматика A1</span>
             </button>
 
             <button
               type="button"
               onClick={() => onNavigate('profile')}
-              className={`relative px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
+              className={`relative shrink-0 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 ${
                 currentView === 'profile'
                   ? `${theme.primaryButton} shadow-md scale-[1.02]`
                   : theme.isLight
@@ -153,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Словарь</span>
+              <span className="hidden min-[420px]:inline">Словарь</span>
               
               {vocabCount > 0 && (
                 <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full transition-colors ${
@@ -169,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right: Status Badges, Settings & Clean Controls */}
-        <div className="flex items-center gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto sm:justify-end sm:gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           {/* Quick Engine / Cache Indicator */}
           <div className="hidden lg:flex items-center gap-2">
             <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium backdrop-blur-md ${
@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {cloudUser ? (
             <>
-              <div title="Вы вошли в аккаунт" className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
+              <div title="Вы вошли в аккаунт" className={`max-w-[11rem] truncate px-2 py-1.5 rounded-xl border text-xs font-bold sm:max-w-[15rem] sm:px-3 ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
                 ☁ {cloudUser.email}
               </div>
               <button
@@ -211,7 +211,7 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </>
           ) : (
-            <button type="button" onClick={onOpenAuth} title="Войти или зарегистрироваться" className={`px-3 py-1.5 rounded-xl border text-xs font-bold ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
+            <button type="button" onClick={onOpenAuth} title="Войти или зарегистрироваться" className={`px-2 sm:px-3 py-1.5 rounded-xl border text-xs font-bold ${theme.navPillBg || 'bg-white/5 border-white/10'}`}>
               ☁ Войти
             </button>
           )}
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Palette className={`w-3.5 h-3.5 ${theme.accentText}`} />
               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-white" />
             </div>
-            <span className="hidden sm:inline">Оформление & ИИ</span>
+            <span className="hidden md:inline">Оформление & ИИ</span>
           </button>
 
           {/* Modern Stylized Window Controls Bar */}

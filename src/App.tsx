@@ -11,7 +11,7 @@ import { LiquidMetal, liquidMetalPresets } from '@paper-design/shaders-react';
 import { GrammarHubScreen } from './components/grammar/GrammarHubScreen';
 import { GrammarLectureScreen } from './components/grammar/GrammarLectureScreen';
 import { AuthModal } from './components/AuthModal';
-import type { TestMode, AISettings, TestQuestion, QuestionResult, CachedWordData, CEFRLevel, UITheme } from './types';
+import type { TestMode, AISettings, TestQuestion, QuestionResult, CachedWordData, CEFRLevel, UITheme, UserVocabularyItem } from './types';
 import type { GrammarLecture } from './types/grammar';
 import { grammarService } from './services/grammarService';
 import { settingsService } from './services/settingsService';
@@ -26,6 +26,30 @@ import { THEMES } from './styles/themes';
 import { cloudSyncService, type CloudUser } from './services/cloudSyncService';
 
 import type { SessionState } from './services/settingsService';
+
+function mergeVocabulary(remote: UserVocabularyItem[], local: UserVocabularyItem[]): UserVocabularyItem[] {
+  const byWord = new Map<string, UserVocabularyItem>();
+  for (const item of [...remote, ...local]) {
+    const key = item.word.toLowerCase().trim();
+    const existing = byWord.get(key);
+    if (!existing) {
+      byWord.set(key, item);
+      continue;
+    }
+    const newer = (item.lastTestedAt || item.addedAt || 0) >= (existing.lastTestedAt || existing.addedAt || 0) ? item : existing;
+    const older = newer === item ? existing : item;
+    const testsCount = Math.max(existing.testsCount || 0, item.testsCount || 0);
+    byWord.set(key, {
+      ...older,
+      ...newer,
+      addedAt: Math.min(existing.addedAt || Date.now(), item.addedAt || Date.now()),
+      testsCount,
+      correctCount: Math.min(testsCount, Math.max(existing.correctCount || 0, item.correctCount || 0)),
+      lastTestedAt: Math.max(existing.lastTestedAt || 0, item.lastTestedAt || 0) || undefined,
+    });
+  }
+  return [...byWord.values()].sort((a, b) => b.addedAt - a.addedAt);
+}
 
 export function App() {
   const [appState, setAppState] = useState<
@@ -65,6 +89,17 @@ export function App() {
     setVocabCount(vocabularyService.getUserVocabulary().length);
   }, []);
 
+  const hydrateCloudVocabulary = useCallback(async (user: CloudUser) => {
+    const remote = await cloudSyncService.loadVocabulary();
+    const merged = mergeVocabulary(remote, vocabularyService.getUserVocabulary());
+    // Do not let a fresh browser's empty localStorage overwrite the account before
+    // its cloud vocabulary has been loaded and merged.
+    vocabularyService.saveUserVocabulary(merged, false);
+    await cloudSyncService.saveVocabulary(merged);
+    setCloudUser(user);
+    refreshCounts();
+  }, [refreshCounts]);
+
   useEffect(() => {
     refreshCounts();
     // Sync settings from permanent disk storage if available in Electron
@@ -78,15 +113,9 @@ export function App() {
   useEffect(() => {
     cloudSyncService.currentUser().then(async (user) => {
       if (!user) return;
-      setCloudUser(user);
-      const remote = await cloudSyncService.loadVocabulary();
-      const local = vocabularyService.getUserVocabulary();
-      const byWord = new Map([...remote, ...local].map(item => [item.word.toLowerCase(), item]));
-      vocabularyService.saveUserVocabulary([...byWord.values()]);
-      await cloudSyncService.saveVocabulary(vocabularyService.getUserVocabulary());
-      refreshCounts();
+      await hydrateCloudVocabulary(user);
     }).catch(() => {});
-  }, [refreshCounts]);
+  }, [hydrateCloudVocabulary]);
 
   const handleSaveSettings = (newSettings: AISettings) => {
     setSettings(newSettings);
@@ -282,7 +311,7 @@ export function App() {
   }
 
   return (
-    <div className={`liquid-metal-app h-screen ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
+    <div className={`liquid-metal-app min-h-[100dvh] ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
       <div className="pointer-events-none fixed inset-0 z-0">
         <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.35} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }} />
         <div className="absolute inset-0 bg-black/45" />
@@ -326,6 +355,7 @@ export function App() {
 
         {appState === 'profile' && (
           <ProfileScreen
+            key={cloudUser?.id || 'guest'}
             currentTheme={currentTheme}
             settings={settings}
             onStartVocabularyTest={(level) => {
@@ -392,9 +422,7 @@ export function App() {
         onSave={handleSaveSettings}
         onCacheUpdated={refreshCounts}
       />
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} theme={currentTheme} onAuthenticated={async (user) => {
-        setCloudUser(user); await cloudSyncService.saveVocabulary(vocabularyService.getUserVocabulary());
-      }} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} theme={currentTheme} onAuthenticated={hydrateCloudVocabulary} />
     </div>
   );
 }

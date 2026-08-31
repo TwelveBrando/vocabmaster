@@ -188,7 +188,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
   return (
     <div
       onClick={keepFocus}
-      className="w-full max-w-5xl mx-auto px-6 sm:px-10 py-6 flex flex-col justify-between h-full flex-1 min-h-0 overflow-y-auto select-none animate-fadeIn relative z-10"
+      className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col justify-between overflow-y-auto px-4 py-4 select-none animate-fadeIn sm:px-10 sm:py-6"
     >
       {/* Top Header Bar inside Test */}
       <div>

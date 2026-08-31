@@ -123,10 +123,10 @@ export const vocabularyService = {
     return [];
   },
 
-  saveUserVocabulary(items: UserVocabularyItem[]): void {
+  saveUserVocabulary(items: UserVocabularyItem[], syncToCloud = true): void {
     try {
       localStorage.setItem(VOCABULARY_STORAGE_KEY, JSON.stringify(items));
-      if (cloudSyncService.isLoggedIn()) {
+      if (syncToCloud && cloudSyncService.isLoggedIn()) {
         void cloudSyncService.saveVocabulary(items).catch(() => {
           // The browser copy remains intact; the next vocabulary change retries sync.
         });

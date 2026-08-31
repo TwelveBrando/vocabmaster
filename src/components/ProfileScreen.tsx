@@ -111,7 +111,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   };
 
   return (
-    <div className="w-full max-w-[1550px] mx-auto px-6 sm:px-10 py-8 flex flex-col gap-7 animate-fadeIn h-full flex-1 min-h-0 overflow-y-auto relative z-10 select-none">
+    <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-[1550px] flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 animate-fadeIn select-none sm:gap-7 sm:px-10 sm:py-8">
       {/* Top Banner & Main Action Buttons */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-slate-200/50 dark:border-white/[0.08]">
         <div>
@@ -124,11 +124,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         {/* Clean, spacious action buttons bar */}
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3 shrink-0 flex-wrap">
           <button
             type="button"
             onClick={() => setIsImportModalOpen(true)}
-            className={`h-11 px-5 rounded-xl border text-sm font-bold flex items-center gap-2.5 transition-all cursor-pointer shadow-sm active:scale-98 ${
+            className={`h-11 flex-1 sm:flex-none px-3 sm:px-5 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98 ${
               theme.isLight
                 ? 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900'
                 : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white'
@@ -142,7 +142,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <button
               type="button"
               onClick={() => onStartVocabularyTest('all')}
-              className={`h-11 px-6 rounded-xl font-bold text-sm shadow-md flex items-center gap-2.5 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
+            className={`h-11 flex-1 sm:flex-none px-3 sm:px-6 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Тестировать мой словарь ({stats.totalWords})</span>
