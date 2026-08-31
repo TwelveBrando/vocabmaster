@@ -7,6 +7,7 @@ import { topic5Lectures } from './grammar/topic5';
 import { topic6Lectures } from './grammar/topic6';
 import { topic7Lectures } from './grammar/topic7';
 import { topic8Lectures } from './grammar/topic8';
+import { irregularVerbsLecture } from './grammar/irregularVerbs';
 
 export const GRAMMAR_A1_TOPICS: GrammarTopic[] = [
   {
@@ -295,6 +296,14 @@ export const GRAMMAR_A1_TOPICS: GrammarTopic[] = [
         exercisesCount: 15,
         lectureId: 'lecture_a1_8_3',
       },
+      {
+        id: 'a1_8_4_irregular_verbs_reference',
+        title: '8.4. Полная таблица неправильных глаголов',
+        description: 'Справочник V1, V2 и V3: более 170 основных неправильных глаголов с переводом.',
+        readTimeMinutes: 18,
+        exercisesCount: 15,
+        lectureId: 'lecture_a1_8_4',
+      },
     ],
   },
 ];
@@ -308,4 +317,5 @@ export const GRAMMAR_A1_LECTURES: Record<string, GrammarLecture> = {
   ...topic6Lectures,
   ...topic7Lectures,
   ...topic8Lectures,
+  ...irregularVerbsLecture,
 };

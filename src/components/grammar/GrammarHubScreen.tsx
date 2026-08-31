@@ -90,7 +90,7 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
                 Уровень A1 • Elementary
               </span>
               <span className={`text-xs font-bold ${theme.textMuted}`}>
-                8 тем • 24 лекции
+                8 тем • 25 лекций
               </span>
             </div>
 

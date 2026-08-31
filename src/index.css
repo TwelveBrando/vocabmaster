@@ -60,6 +60,28 @@
     overflow-x: hidden;
     background: #050505;
   }
+
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: clip;
+  }
+}
+
+/* Lenis owns the single app scroll container. Screen components used to own
+   separate scrollbars; making them flow into this container fixes the case
+   where a screen looked scrollable but its page could no longer move. */
+.vocabmaster-scroll-content > div {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow: visible !important;
 }
 
 @keyframes fadeIn {

@@ -192,8 +192,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   <span className="text-xs font-black" style={{ color: CEFR_LEVELS_META[lvl].colorHex }}>{lvl}</span>
                   <span className={`text-xs font-extrabold mt-0.5 ${
                     count > 0
-                      ? theme.isLight ? 'text-slate-950' : theme.textPrimary
-                      : theme.isLight ? 'text-slate-400 font-normal' : 'text-slate-500 opacity-40'
+                      ? 'text-slate-950 dark:text-white'
+                      : 'text-slate-500 dark:text-slate-400 opacity-70 font-normal'
                   }`}>
                     {count}
                   </span>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import Lenis from 'lenis';
 import { Header } from './components/Header';
 import { SetupScreen } from './components/SetupScreen';
 import { ProfileScreen } from './components/ProfileScreen';
@@ -52,6 +53,8 @@ function mergeVocabulary(remote: UserVocabularyItem[], local: UserVocabularyItem
 }
 
 export function App() {
+  const scrollWrapperRef = useRef<HTMLElement>(null);
+  const scrollContentRef = useRef<HTMLDivElement>(null);
   const [appState, setAppState] = useState<
     'setup' | 'profile' | 'preparing' | 'testing' | 'results' | 'grammar_hub' | 'grammar_lecture'
   >('setup');
@@ -125,6 +128,26 @@ export function App() {
       startCloudSession(user);
     }).catch(() => {});
   }, [startCloudSession]);
+
+  // Augen.pro uses Lenis.  Keeping it scoped to the application content (rather
+  // than replacing window scrolling) lets Electron and the web app keep their
+  // existing layout and prevents a missing page scroll on short screens.
+  useEffect(() => {
+    const wrapper = scrollWrapperRef.current;
+    const content = scrollContentRef.current;
+    if (!wrapper || !content || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const lenis = new Lenis({
+      wrapper,
+      content,
+      duration: 1.2,
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      touchMultiplier: 1.5,
+      autoRaf: true,
+    });
+    return () => lenis.destroy();
+  }, [isWelcomeScreenOpen]);
 
   const handleSaveSettings = (newSettings: AISettings) => {
     setSettings(newSettings);
@@ -344,7 +367,8 @@ export function App() {
       />
 
       {/* Main Content Screens */}
-      <main className="z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <main ref={scrollWrapperRef} className="vocabmaster-scroll z-10 min-h-0 flex-1 overflow-y-auto">
+        <div ref={scrollContentRef} className="vocabmaster-scroll-content flex min-h-full flex-col">
         {appState === 'setup' && (
           <SetupScreen
             initialText={sessionState.inputText}
@@ -422,6 +446,7 @@ export function App() {
             onBackToSetup={handleBackToSetup}
           />
         )}
+        </div>
       </main>
 
       {/* Settings Modal */}

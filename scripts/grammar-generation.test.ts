@@ -164,7 +164,7 @@ const legacyThinkingConfig = requestBodies.at(-1)?.generationConfig as { thinkin
 assert.equal(legacyThinkingConfig.thinkingConfig.thinkingBudget, 0, 'Gemini 2.5 must use thinkingBudget');
 
 const allLectureIds = service.getA1Topics().flatMap((topic) => topic.subtopics.map((subtopic) => subtopic.lectureId));
-assert.equal(allLectureIds.length, 24, 'the A1 course must expose 24 lectures');
+assert.equal(allLectureIds.length, 25, 'the A1 course must expose 25 lectures');
 for (const lectureId of allLectureIds) {
   storage.removeItem('vocab_grammar_ai_history_v1');
   fixture = makeExercises(`Coverage${lectureId.replace(/[^a-z0-9]/gi, '')}`);
@@ -265,4 +265,4 @@ const pending = service.generateLiveExercises(lecture, settings, { signal: contr
 controller.abort();
 await assert.rejects(pending, (error: unknown) => error instanceof DOMException && error.name === 'AbortError');
 
-console.log('Grammar generation tests passed: 24 lectures, provider configs, schema, diversity, keys, local endpoint, cancellation.');
+console.log('Grammar generation tests passed: 25 lectures, provider configs, schema, diversity, keys, local endpoint, cancellation.');

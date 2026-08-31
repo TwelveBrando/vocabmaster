@@ -120,10 +120,10 @@ export const CEFR_DICTIONARY: DictionaryEntry[] = [
 ];
 
 export const CEFR_LEVELS_META: Record<CEFRLevel, { label: string; desc: string; badgeClass: string; colorHex: string }> = {
-  A1: { label: 'A1 Beginner', desc: 'Базовые слова первой необходимости', badgeClass: 'bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-500/50 shadow-2xs font-extrabold', colorHex: '#10b981' },
-  A2: { label: 'A2 Elementary', desc: 'Повседневная разговорная лексика', badgeClass: 'bg-teal-100 text-teal-950 border-teal-300 dark:bg-teal-950/70 dark:text-teal-300 dark:border-teal-500/50 shadow-2xs font-extrabold', colorHex: '#0d9488' },
-  B1: { label: 'B1 Intermediate', desc: 'Разговорный и рабочий уровень', badgeClass: 'bg-sky-100 text-sky-950 border-sky-300 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-500/50 shadow-2xs font-extrabold', colorHex: '#0284c7' },
-  B2: { label: 'B2 Upper-Inter', desc: 'Продвинутая свободная лексика', badgeClass: 'bg-indigo-100 text-indigo-950 border-indigo-300 dark:bg-indigo-950/70 dark:text-indigo-300 dark:border-indigo-500/50 shadow-2xs font-extrabold', colorHex: '#6366f1' },
-  C1: { label: 'C1 Advanced', desc: 'Профессиональная и академическая лексика', badgeClass: 'bg-purple-100 text-purple-950 border-purple-300 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-500/50 shadow-2xs font-extrabold', colorHex: '#9333ea' },
-  C2: { label: 'C2 Mastery', desc: 'Лексика уровня носителя языка', badgeClass: 'bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-500/50 shadow-2xs font-extrabold', colorHex: '#e11d48' },
+  A1: { label: 'A1 Beginner', desc: 'Базовые слова первой необходимости', badgeClass: 'bg-slate-200 text-slate-950 border-slate-400 dark:bg-slate-200/15 dark:text-slate-100 dark:border-slate-300/35 shadow-2xs font-extrabold', colorHex: '#d1d5db' },
+  A2: { label: 'A2 Elementary', desc: 'Повседневная разговорная лексика', badgeClass: 'bg-slate-200 text-slate-950 border-slate-400 dark:bg-slate-200/15 dark:text-slate-100 dark:border-slate-300/35 shadow-2xs font-extrabold', colorHex: '#cbd5e1' },
+  B1: { label: 'B1 Intermediate', desc: 'Разговорный и рабочий уровень', badgeClass: 'bg-slate-200 text-slate-950 border-slate-400 dark:bg-slate-200/15 dark:text-slate-100 dark:border-slate-300/35 shadow-2xs font-extrabold', colorHex: '#b6bec9' },
+  B2: { label: 'B2 Upper-Inter', desc: 'Продвинутая свободная лексика', badgeClass: 'bg-slate-200 text-slate-950 border-slate-400 dark:bg-slate-200/15 dark:text-slate-100 dark:border-slate-300/35 shadow-2xs font-extrabold', colorHex: '#9ca3af' },
+  C1: { label: 'C1 Advanced', desc: 'Профессиональная и академическая лексика', badgeClass: 'bg-slate-200 text-slate-950 border-slate-400 dark:bg-slate-200/15 dark:text-slate-100 dark:border-slate-300/35 shadow-2xs font-extrabold', colorHex: '#87909d' },
+  C2: { label: 'C2 Mastery', desc: 'Лексика уровня носителя языка', badgeClass: 'bg-slate-200 text-slate-950 border-slate-400 dark:bg-slate-200/15 dark:text-slate-100 dark:border-slate-300/35 shadow-2xs font-extrabold', colorHex: '#737b86' },
 };
