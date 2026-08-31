@@ -43,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   const noDrag = { WebkitAppRegion: 'no-drag' } as React.CSSProperties;
 
   return (
-    <header className="relative z-30 w-full select-none px-3 pt-3 sm:px-6 sm:pt-5" style={appRegion}>
+    <header className="app-header relative z-30 w-full select-none px-3 pt-3 sm:px-6 sm:pt-5" style={appRegion}>
       <div className="mx-auto flex max-w-[1540px] items-center justify-between gap-3">
         <button
           type="button"

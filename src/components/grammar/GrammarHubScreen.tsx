@@ -69,13 +69,13 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
       {/* Top Banner: Level A1 & Progress Hub */}
       <div className={`${theme.cardBg} ${theme.cardBorder} rounded-3xl p-5 sm:p-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-5 sm:gap-6 shadow-xl backdrop-blur-2xl transition-all relative overflow-hidden shrink-0`}>
         {/* Glow effect */}
-        <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
 
         <div className="flex items-start gap-4 sm:gap-5 relative z-10">
           <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
             theme.isLight 
-              ? 'bg-gradient-to-tr from-cyan-600 to-indigo-600 text-white' 
-              : 'bg-gradient-to-tr from-cyan-500 to-indigo-500 text-white shadow-cyan-500/25'
+              ? 'bg-gradient-to-tr from-amber-600 to-orange-500 text-white' 
+              : 'bg-gradient-to-tr from-amber-500 to-orange-400 text-white shadow-amber-500/25'
           }`}>
             <GraduationCap className="w-9 h-9" />
           </div>
@@ -84,8 +84,8 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
             <div className="flex items-center gap-2">
               <span className={`text-xs uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-md border ${
                 theme.isLight 
-                  ? 'bg-cyan-100 text-cyan-800 border-cyan-200' 
-                  : 'bg-cyan-950/60 text-cyan-400 border-cyan-800/40'
+                  ? 'bg-amber-100 text-amber-900 border-amber-200' 
+                  : 'bg-amber-950/35 text-amber-200 border-amber-400/25'
               }`}>
                 Уровень A1 • Elementary
               </span>

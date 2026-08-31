@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UploadCloud, CheckCircle2, ListOrdered, Sparkles, RotateCcw } from 'lucide-react';
 import type { UITheme, DictionaryEntry } from '../types';
 import { THEMES } from '../styles/themes';
@@ -61,16 +62,16 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+  return createPortal(
+    <div className="import-modal-layer fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="import-modal-backdrop absolute inset-0"
       />
 
       {/* Modal Surface */}
-      <div className={`relative w-full max-w-2xl rounded-2xl border shadow-xl overflow-hidden flex flex-col max-h-[85vh] transition-all z-10 ${theme.modalBg} ${theme.cardBorder}`}>
+      <div role="dialog" aria-modal="true" aria-label="Импорт списка слов" className={`import-modal-panel relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${theme.modalBg} ${theme.cardBorder}`}>
         {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${theme.modalHeaderBg} ${theme.cardBorder}`}>
           <div className="flex items-center gap-2.5">
@@ -217,6 +218,7 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
