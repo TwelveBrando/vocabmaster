@@ -86,18 +86,6 @@
   animation: metalReveal 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* One scroll rail keeps all screens coherent; dialogs retain native scrolling. */
-.liquid-metal-app .app-scroll-content > * {
-  height: auto !important;
-  min-height: 100%;
-  flex: 0 0 auto !important;
-  overflow: visible !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .liquid-metal-app main { scroll-behavior: auto; }
-}
-
 .liquid-metal-app button,
 .liquid-metal-app input,
 .liquid-metal-app textarea,
