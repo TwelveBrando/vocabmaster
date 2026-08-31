@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { SetupScreen } from './components/SetupScreen';
 import { ProfileScreen } from './components/ProfileScreen';
@@ -24,6 +24,7 @@ import { getSmartFallbackDistractors } from './services/distractorPool';
 import { translatorService } from './services/translatorService';
 import { THEMES } from './styles/themes';
 import { cloudSyncService, type CloudUser } from './services/cloudSyncService';
+import { useSmoothScroll } from './hooks/useSmoothScroll';
 
 import type { SessionState } from './services/settingsService';
 
@@ -52,6 +53,8 @@ function mergeVocabulary(remote: UserVocabularyItem[], local: UserVocabularyItem
 }
 
 export function App() {
+  const scrollWrapperRef = useRef<HTMLElement>(null);
+  const scrollContentRef = useRef<HTMLDivElement>(null);
   const [appState, setAppState] = useState<
     'setup' | 'profile' | 'preparing' | 'testing' | 'results' | 'grammar_hub' | 'grammar_lecture'
   >('setup');
@@ -84,6 +87,8 @@ export function App() {
   // preserved in settings but no longer applied to the web or desktop UI.
   const currentTheme: UITheme = 'language_explorer';
   const currentThemeConfig = THEMES.language_explorer;
+
+  useSmoothScroll(scrollWrapperRef, scrollContentRef);
 
   const refreshCounts = useCallback(() => {
     setCachedCount(cacheService.getAllCachedWords().length);
@@ -343,7 +348,8 @@ export function App() {
       />
 
       {/* Main Content Screens */}
-      <main className="z-10 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <main ref={scrollWrapperRef} className="z-10 flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
+        <div ref={scrollContentRef} className="app-scroll-content flex min-h-full flex-col">
         {appState === 'setup' && (
           <SetupScreen
             initialText={sessionState.inputText}
@@ -421,6 +427,7 @@ export function App() {
             onBackToSetup={handleBackToSetup}
           />
         )}
+        </div>
       </main>
 
       {/* Settings Modal */}
