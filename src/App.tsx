@@ -319,7 +319,7 @@ export function App() {
   }
 
   return (
-    <div className={`liquid-metal-app min-h-[100dvh] ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
+    <div className={`liquid-metal-app h-[100dvh] ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
       <div className="pointer-events-none fixed inset-0 z-0">
         <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.35} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }} />
         <div className="absolute inset-0 bg-black/45" />
