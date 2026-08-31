@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Trash2, Key, Cpu, Palette, Sliders, CheckCircle2, Eye, EyeOff, Check, AlertCircle, Languages } from 'lucide-react';
+import { X, Trash2, Key, Cpu, Palette, Sliders, CheckCircle2, Eye, EyeOff, Check, AlertCircle, Languages } from 'lucide-react';
 import type { AISettings, UITheme, AIProvider } from '../types';
 import { cacheService } from '../services/cacheService';
 import { settingsService } from '../services/settingsService';
 import { THEMES } from '../styles/themes';
 import { executeThemeTransition } from '../utils/themeTransition';
+import { FlowButton } from './ui/flow-button';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -32,13 +33,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       const freshSettings = settingsService.getSettings();
-      setFormData({ ...freshSettings, theme: 'language_explorer' });
+      setFormData(freshSettings);
     }
   }, [isOpen, settings]);
 
   if (!isOpen) return null;
 
-  const currentThemeConfig = THEMES.language_explorer;
+  const currentThemeConfig = THEMES[formData.theme] || THEMES.language_explorer;
 
   // Auto-save helper to guarantee no keys are ever lost
   const persistChanges = (updated: AISettings) => {
@@ -160,7 +161,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const allThemesList: UITheme[] = ['language_explorer'];
+  const allThemesList: UITheme[] = ['language_explorer', 'prisma_noir'];
 
   const providersList: { id: AIProvider; label: string; desc: string; link: string; placeholder: string }[] = [
     { id: 'gemini', label: 'Google Gemini', desc: 'Flash-Lite • Free tier', link: 'aistudio.google.com/app/apikey', placeholder: 'AIzaSy...' },
@@ -196,7 +197,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 Оформление & Настройки ИИ и Перевода
               </h3>
               <p className={`text-xs sm:text-sm mt-0.5 ${currentThemeConfig.textSecondary}`}>
-                14 тем, ИИ-провайдеры, Яндекс.Словарь и параметры тестирования
+                2 темы, ИИ-провайдеры, Яндекс.Словарь и параметры тестирования
               </p>
             </div>
           </div>
@@ -626,14 +627,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             Закрыть
           </button>
 
-          <button
-            type="button"
+          <FlowButton
             onClick={handleSave}
-            className={`px-7 py-3 rounded-2xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xl transition-all cursor-pointer active:scale-95 ${currentThemeConfig.primaryButton}`}
-          >
-            <Save className="w-4 h-4" />
-            <span>{isSaved ? 'Сохранено ✓' : 'Сохранить настройки'}</span>
-          </button>
+            className={`rounded-2xl px-7 py-3 font-bold text-xs sm:text-sm shadow-xl transition-all ${currentThemeConfig.primaryButton}`}
+            text={isSaved ? 'Сохранено ✓' : 'Сохранить настройки'}
+          />
         </div>
       </div>
     </div>

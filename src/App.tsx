@@ -66,6 +66,7 @@ export function App() {
   const [vocabularyRevision, setVocabularyRevision] = useState(0);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isWelcomeScreenOpen, setIsWelcomeScreenOpen] = useState(true);
+  const [isContentScrolled, setIsContentScrolled] = useState(false);
 
   // Grammar Module State
   const [currentGrammarLecture, setCurrentGrammarLecture] = useState<GrammarLecture | null>(null);
@@ -83,10 +84,8 @@ export function App() {
   const [testResults, setTestResults] = useState<QuestionResult[]>([]);
   const [currentWordsData, setCurrentWordsData] = useState<CachedWordData[]>([]);
 
-  // The visual system is intentionally unified for now. Older saved themes are
-  // preserved in settings but no longer applied to the web or desktop UI.
-  const currentTheme: UITheme = 'language_explorer';
-  const currentThemeConfig = THEMES.language_explorer;
+  const currentTheme: UITheme = settings.theme in THEMES ? settings.theme : 'language_explorer';
+  const currentThemeConfig = THEMES[currentTheme];
 
 
   const refreshCounts = useCallback(() => {
@@ -343,11 +342,15 @@ export function App() {
   }
 
   return (
-    <div className={`liquid-metal-app h-[100dvh] ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.35} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }} />
-        <div className="absolute inset-0 bg-black/45" />
-      </div>
+    <div className={`vocab-app theme-${currentTheme} h-[100dvh] ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
+      {currentTheme === 'language_explorer' ? (
+        <div className="pointer-events-none fixed inset-0 z-0">
+          <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.35} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }} />
+          <div className="absolute inset-0 bg-black/45" />
+        </div>
+      ) : (
+        <div className="prisma-noir-backdrop pointer-events-none fixed inset-0 z-0" aria-hidden="true"><span>V</span></div>
+      )}
 
       {/* Header with Navigation */}
       <Header
@@ -364,10 +367,11 @@ export function App() {
         cachedCount={cachedCount}
         vocabCount={vocabCount}
         currentTheme={currentTheme}
+        isScrolled={isContentScrolled}
       />
 
       {/* Main Content Screens */}
-      <main ref={scrollWrapperRef} className="vocabmaster-scroll z-10 min-h-0 flex-1 overflow-y-auto">
+      <main ref={scrollWrapperRef} onScroll={(event) => setIsContentScrolled(event.currentTarget.scrollTop > 6)} className="vocabmaster-scroll z-10 min-h-0 flex-1 overflow-y-auto">
         <div ref={scrollContentRef} className="vocabmaster-scroll-content flex min-h-full flex-col">
         {appState === 'setup' && (
           <SetupScreen

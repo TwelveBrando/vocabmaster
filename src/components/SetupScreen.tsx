@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Sliders, CheckCircle2, FileText, ArrowRight, RotateCcw, ListOrdered, BookOpen, Layers, Plus } from 'lucide-react';
+import { Sparkles, Sliders, CheckCircle2, FileText, RotateCcw, ListOrdered, BookOpen, Layers, Plus } from 'lucide-react';
 import type { TestMode, UITheme, CEFRLevel } from '../types';
 import { THEMES } from '../styles/themes';
 import { parseVocabularyInput } from '../services/wordParser';
 import { vocabularyService } from '../services/vocabularyService';
 import { CEFR_LEVELS_META } from '../data/cefrDictionary';
+import { FlowButton } from './ui/flow-button';
 
 import type { SessionState } from '../services/settingsService';
 
@@ -503,20 +504,15 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
           <span>быстрый старт теста</span>
         </div>
 
-        <button
-          type="button"
+        <FlowButton
           onClick={handleStart}
-          className={`w-full sm:w-auto px-10 py-4 rounded-2xl font-bold text-base shadow-xl flex items-center justify-center gap-3 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
-        >
-          <span>
-            {sourceType === 'vocab_bank'
+          className={`w-full sm:w-auto rounded-2xl px-10 py-4 font-bold text-base shadow-xl transition-all ${theme.primaryButton}`}
+          text={sourceType === 'vocab_bank'
               ? totalUserWords === 0
                 ? 'Открыть словарь'
                 : `Начать тест (${availableInSelectedLevel} слов)`
               : 'Запустить тест'}
-          </span>
-          <ArrowRight className="w-5 h-5" />
-        </button>
+        />
       </div>
     </div>
   );

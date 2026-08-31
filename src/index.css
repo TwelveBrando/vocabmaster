@@ -20,6 +20,7 @@
 
 @layer base {
   :root {
+    --app-ui-scale: 1.06;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --background: #050505;
     --foreground: #f7f7f5;
@@ -59,6 +60,7 @@
     letter-spacing: -0.01em;
     overflow-x: hidden;
     background: #050505;
+    zoom: var(--app-ui-scale);
   }
 
   html.lenis,
@@ -141,6 +143,99 @@
   animation: importModalIn 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Prisma Noir: warm-black cinema, restrained grain and cream controls. */
+.prisma-noir-backdrop { overflow: hidden; background: #0d0d0c; }
+.prisma-noir-backdrop::before { content: ''; position: absolute; inset: -15%; background: radial-gradient(ellipse 52% 42% at 18% 16%, rgb(225 224 204 / .15), transparent 68%), radial-gradient(ellipse 45% 38% at 86% 82%, rgb(124 116 87 / .22), transparent 67%), linear-gradient(125deg, transparent 30%, rgb(225 224 204 / .035) 49%, transparent 61%); filter: blur(24px); animation: prismaDrift 17s ease-in-out infinite alternate; }
+.prisma-noir-backdrop::after { content: ''; position: absolute; inset: 0; opacity: .24; background-image: repeating-radial-gradient(circle at 0 0, rgb(225 224 204 / .13) 0 1px, transparent 1px 3px); mix-blend-mode: soft-light; }
+.prisma-noir-backdrop span { display: none; }
+.theme-prisma_noir { font-family: Arial, Helvetica, sans-serif; color: #e1e0cc; }
+.theme-prisma_noir main > * { animation: prismaReveal 720ms cubic-bezier(.16,1,.3,1) both; }
+.theme-prisma_noir h1,
+.theme-prisma_noir h2,
+.theme-prisma_noir h3 { font-weight: 600 !important; letter-spacing: -.06em !important; line-height: .94 !important; }
+.theme-prisma_noir button { transition: color 260ms cubic-bezier(.16,1,.3,1), background-color 260ms cubic-bezier(.16,1,.3,1), border-color 260ms cubic-bezier(.16,1,.3,1), box-shadow 260ms cubic-bezier(.16,1,.3,1), transform 260ms cubic-bezier(.16,1,.3,1) !important; }
+.theme-prisma_noir button:not(:disabled):hover { transform: translateY(-2px); }
+.theme-prisma_noir button:not(:disabled):active { transform: translateY(0) scale(.98); }
+.theme-prisma_noir .vocabmaster-scroll-content > div > div[class*="rounded-3xl"],
+.theme-prisma_noir .vocabmaster-scroll-content > div > div[class*="rounded-2xl"] { background-color: rgb(25 25 23 / .84) !important; border-color: rgb(225 224 204 / .18) !important; transition: background-color 360ms cubic-bezier(.16,1,.3,1), border-color 360ms cubic-bezier(.16,1,.3,1), transform 360ms cubic-bezier(.16,1,.3,1), box-shadow 360ms cubic-bezier(.16,1,.3,1); }
+.theme-prisma_noir .vocabmaster-scroll-content > div > div[class*="rounded-3xl"]:hover,
+.theme-prisma_noir .vocabmaster-scroll-content > div > div[class*="rounded-2xl"]:hover { background-color: rgb(33 33 30 / .94) !important; border-color: rgb(225 224 204 / .42) !important; transform: translateY(-4px); box-shadow: 0 28px 78px rgb(0 0 0 / .35); }
+.theme-prisma_noir .app-header { padding-top: 0; }
+.theme-prisma_noir .app-header > div { max-width: 1540px; padding-top: 16px; }
+/* Flat text navigation: no hanging panel/curtain behind the links. */
+.theme-prisma_noir .app-nav { align-self: flex-start; margin-top: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; gap: 24px; }
+.theme-prisma_noir .app-nav button { padding: 6px 0; color: rgb(225 224 204 / .57); border-radius: 0; background: transparent !important; }
+.theme-prisma_noir .app-nav button:hover { color: #e1e0cc; background: transparent !important; transform: none !important; }
+.theme-prisma_noir .app-nav button.bg-white { color: #e1e0cc; background: transparent !important; box-shadow: none; }
+.theme-prisma_noir .app-nav button::after { display: none; }
+.theme-prisma_noir .app-nav .nav-label--active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -7px; height: 1px; background: #e1e0cc; }
+.theme-prisma_noir .app-nav::after,
+.theme-prisma_noir .app-header::after { display: none; }
+.theme-prisma_noir .app-header .flow-button { min-height: 36px; }
+.theme-prisma_noir .app-header > div > .flex:last-child > button:not(.flow-button) { height: 36px; width: 36px; }
+.theme-prisma_noir .vocabmaster-scroll { scrollbar-color: #e1e0cc transparent; }
+.theme-prisma_noir input,
+.theme-prisma_noir textarea,
+.theme-prisma_noir select { border-color: rgb(225 224 204 / .20) !important; }
+
+/* Flow CTA: intentionally mirrors the supplied interaction, rather than a
+   generic colour change. It belongs exclusively to Prisma Noir. */
+.theme-prisma_noir .flow-button {
+  --flow-ink: #e1e0cc;
+  --flow-fill: #e1e0cc;
+  --flow-hover-ink: #0d0d0c;
+  min-height: 44px;
+  border: 1.5px solid color-mix(in srgb, var(--flow-ink) 42%, transparent) !important;
+  border-radius: 100px !important;
+  background: transparent !important;
+  color: var(--flow-ink) !important;
+  cursor: pointer;
+  isolation: isolate;
+  transition: border-color 600ms cubic-bezier(.23,1,.32,1), color 600ms cubic-bezier(.23,1,.32,1), border-radius 600ms cubic-bezier(.23,1,.32,1), transform 260ms cubic-bezier(.23,1,.32,1) !important;
+}
+.theme-prisma_noir .flow-button__label { transition: letter-spacing 800ms ease-out, transform 800ms ease-out; }
+.theme-prisma_noir .flow-button__fill { z-index: 0; background: var(--flow-fill); transition: width 800ms cubic-bezier(.19,1,.22,1), height 800ms cubic-bezier(.19,1,.22,1), opacity 800ms cubic-bezier(.19,1,.22,1); }
+@media (hover: hover) {
+  .theme-prisma_noir .flow-button:hover { border-color: transparent !important; border-radius: 12px !important; color: var(--flow-hover-ink) !important; transform: none !important; }
+  .theme-prisma_noir .flow-button:hover .flow-button__label { letter-spacing: .025em; transform: scale(1.02); }
+  .theme-prisma_noir .flow-button:hover .flow-button__fill { width: 220px; height: 220px; opacity: 1; }
+}
+.theme-prisma_noir .flow-button:active { transform: scale(.95) !important; }
+.theme-prisma_noir .flow-button { --flow-ink: #e1e0cc; --flow-fill: #e1e0cc; --flow-hover-ink: #0d0d0c; }
+
+/* Every primary action in Prisma gets the same growing-centre treatment,
+   including actions rendered by existing screens rather than FlowButton. */
+.theme-prisma_noir .prisma-flow-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-style: solid !important;
+  border-width: 1.5px !important;
+  border-color: rgb(225 224 204 / .42) !important;
+  border-radius: 100px !important;
+  background: transparent !important;
+  color: #e1e0cc !important;
+  transition: border-color 600ms cubic-bezier(.23,1,.32,1), color 600ms cubic-bezier(.23,1,.32,1), border-radius 600ms cubic-bezier(.23,1,.32,1), transform 260ms cubic-bezier(.23,1,.32,1) !important;
+}
+.theme-prisma_noir .prisma-flow-surface::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; width: 16px; height: 16px; border-radius: 50%; opacity: 0; transform: translate(-50%, -50%); background: #e1e0cc; transition: width 800ms cubic-bezier(.19,1,.22,1), height 800ms cubic-bezier(.19,1,.22,1), opacity 800ms cubic-bezier(.19,1,.22,1); }
+@media (hover: hover) {
+  .theme-prisma_noir .prisma-flow-surface:hover { border-color: transparent !important; border-radius: 12px !important; color: #0d0d0c !important; transform: none !important; }
+  .theme-prisma_noir .prisma-flow-surface:hover::before { width: 240px; height: 240px; opacity: 1; }
+}
+.theme-prisma_noir .prisma-flow-surface:active { transform: scale(.95) !important; }
+@keyframes prismaDrift { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 2%, 0) scale(1.05); } }
+@keyframes prismaReveal { from { opacity: 0; transform: translateY(28px); filter: blur(7px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+
+@keyframes authPanelIn { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.auth-backdrop { background: rgb(0 0 0 / .7); backdrop-filter: blur(14px) saturate(.75); }
+.auth-panel { animation: authPanelIn 360ms cubic-bezier(.16,1,.3,1) both; }
+.auth-aside { background: linear-gradient(145deg, #ff2aa1 0%, #ff87c6 49%, #f6f4ef 49%); }
+.auth-orb { background: #0a0a0a; mix-blend-mode: multiply; opacity: .85; }
+.theme-prisma_noir .auth-aside { background: #e1e0cc; }
+.theme-prisma_noir .auth-orb { background: #151513; mix-blend-mode: normal; }
+.theme-prisma_noir .auth-panel { border-color: rgb(225 224 204 / .28); box-shadow: 0 32px 100px rgb(0 0 0 / .55); }
+.theme-prisma_noir .auth-form { color: #e1e0cc; }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -161,67 +256,67 @@
   to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
-.liquid-metal-app main > * {
+.theme-language_explorer main > * {
   animation: metalReveal 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.liquid-metal-app button,
-.liquid-metal-app input,
-.liquid-metal-app textarea,
-.liquid-metal-app select {
+.theme-language_explorer button,
+.theme-language_explorer input,
+.theme-language_explorer textarea,
+.theme-language_explorer select {
   transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease !important;
 }
 
-.liquid-metal-app button:not(:disabled):hover {
+.theme-language_explorer button:not(:disabled):hover {
   transform: translateY(-2px);
 }
 
-.liquid-metal-app button:not(:disabled):active {
+.theme-language_explorer button:not(:disabled):active {
   transform: translateY(0) scale(0.98);
 }
 
-.liquid-metal-app input:focus,
-.liquid-metal-app textarea:focus,
-.liquid-metal-app select:focus {
+.theme-language_explorer input:focus,
+.theme-language_explorer textarea:focus,
+.theme-language_explorer select:focus {
   box-shadow: 0 0 0 4px rgb(255 255 255 / 12%), 0 18px 50px rgb(0 0 0 / 25%) !important;
 }
 
 /* Existing feature screens used their own neon accent utilities. The liquid-metal
    mode deliberately neutralizes them so every surface belongs to one system. */
-.liquid-metal-app [class*="text-cyan"],
-.liquid-metal-app [class*="text-amber"],
-.liquid-metal-app [class*="text-indigo"],
-.liquid-metal-app [class*="text-purple"],
-.liquid-metal-app [class*="text-pink"],
-.liquid-metal-app [class*="text-emerald"],
-.liquid-metal-app [class*="text-rose"] {
+.theme-language_explorer [class*="text-cyan"],
+.theme-language_explorer [class*="text-amber"],
+.theme-language_explorer [class*="text-indigo"],
+.theme-language_explorer [class*="text-purple"],
+.theme-language_explorer [class*="text-pink"],
+.theme-language_explorer [class*="text-emerald"],
+.theme-language_explorer [class*="text-rose"] {
   color: rgb(247 247 245) !important;
 }
 
-.liquid-metal-app [class*="bg-cyan"],
-.liquid-metal-app [class*="bg-amber"],
-.liquid-metal-app [class*="bg-indigo"],
-.liquid-metal-app [class*="bg-purple"],
-.liquid-metal-app [class*="bg-pink"],
-.liquid-metal-app [class*="bg-emerald"],
-.liquid-metal-app [class*="bg-rose"] {
+.theme-language_explorer [class*="bg-cyan"],
+.theme-language_explorer [class*="bg-amber"],
+.theme-language_explorer [class*="bg-indigo"],
+.theme-language_explorer [class*="bg-purple"],
+.theme-language_explorer [class*="bg-pink"],
+.theme-language_explorer [class*="bg-emerald"],
+.theme-language_explorer [class*="bg-rose"] {
   background-color: rgb(255 255 255 / 12%) !important;
 }
 
-.liquid-metal-app [class*="border-cyan"],
-.liquid-metal-app [class*="border-amber"],
-.liquid-metal-app [class*="border-indigo"],
-.liquid-metal-app [class*="border-purple"],
-.liquid-metal-app [class*="border-pink"],
-.liquid-metal-app [class*="border-emerald"],
-.liquid-metal-app [class*="border-rose"],
-.liquid-metal-app [class*="ring-cyan"],
-.liquid-metal-app [class*="ring-amber"],
-.liquid-metal-app [class*="ring-indigo"],
-.liquid-metal-app [class*="ring-purple"],
-.liquid-metal-app [class*="ring-pink"],
-.liquid-metal-app [class*="ring-emerald"],
-.liquid-metal-app [class*="ring-rose"] {
+.theme-language_explorer [class*="border-cyan"],
+.theme-language_explorer [class*="border-amber"],
+.theme-language_explorer [class*="border-indigo"],
+.theme-language_explorer [class*="border-purple"],
+.theme-language_explorer [class*="border-pink"],
+.theme-language_explorer [class*="border-emerald"],
+.theme-language_explorer [class*="border-rose"],
+.theme-language_explorer [class*="ring-cyan"],
+.theme-language_explorer [class*="ring-amber"],
+.theme-language_explorer [class*="ring-indigo"],
+.theme-language_explorer [class*="ring-purple"],
+.theme-language_explorer [class*="ring-pink"],
+.theme-language_explorer [class*="ring-emerald"],
+.theme-language_explorer [class*="ring-rose"] {
   border-color: rgb(255 255 255 / 32%) !important;
   --tw-ring-color: rgb(255 255 255 / 20%) !important;
 }

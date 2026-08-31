@@ -17,7 +17,8 @@ export type UITheme =
   | 'bento_luxury'
   | 'nordic_paper'
   | 'sakura_sunset'
-  | 'emerald_synth';
+  | 'emerald_synth'
+  | 'prisma_noir';
 
 export type CEFRLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 

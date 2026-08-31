@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Check, Trash2, BookOpen, Layers, Award, Sparkles, Play, Loader2, FileInput, History } from 'lucide-react';
+import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History } from 'lucide-react';
 import type { CEFRLevel, DictionaryEntry, UITheme, AISettings } from '../types';
 import { vocabularyService } from '../services/vocabularyService';
 import { CEFR_LEVELS_META } from '../data/cefrDictionary';
@@ -158,9 +158,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         {/* Total Words Card */}
         <div className={`${theme.cardBg} ${theme.cardBorder} p-5.5 rounded-2xl shadow-sm flex items-center gap-4`}>
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-            theme.isLight ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-cyan-500/15 text-cyan-400 border border-cyan-500/30'
+            theme.isLight ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-white/[0.09] text-white/90 border border-white/20'
           }`}>
-            <BookOpen className="w-6 h-6" />
+            <BookMarked className="w-6 h-6" strokeWidth={1.7} />
           </div>
           <div>
             <div className={`text-xs font-bold uppercase tracking-wider ${theme.textMuted}`}>В вашем запасе</div>

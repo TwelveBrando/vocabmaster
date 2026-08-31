@@ -13,7 +13,7 @@ import {
   History,
   Search,
   Award,
-  GraduationCap
+  BookMarked
 } from 'lucide-react';
 import type { UITheme, AISettings } from '../../types';
 import type { GrammarTopic, GrammarSubtopic } from '../../types/grammar';
@@ -77,7 +77,7 @@ export const GrammarHubScreen: React.FC<GrammarHubScreenProps> = ({
               ? 'bg-gradient-to-tr from-amber-600 to-orange-500 text-white'
               : 'bg-gradient-to-tr from-amber-500 to-orange-400 text-white shadow-amber-500/25'
           }`}>
-            <GraduationCap className="w-9 h-9" />
+            <BookMarked className="w-8 h-8" strokeWidth={1.7} />
           </div>
 
           <div className="flex flex-col">
