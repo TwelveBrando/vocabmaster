@@ -16,5 +16,12 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'https://vocabmaster-api-pi.vercel.app',
+        changeOrigin: true,
+        headers: { Origin: 'https://vocabmaster-lac-nine.vercel.app' },
+      },
+    },
   },
 })

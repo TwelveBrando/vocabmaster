@@ -1,7 +1,9 @@
 import type { QuestionResult, TestMode, UserVocabularyItem } from '../types';
 
 const TOKEN_KEY = 'vocabmaster_web_token';
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+// Production injects VITE_API_URL at build time. During local Vite development
+// we use the same-origin proxy below, so the browser never tries localhost:3001.
+const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const REQUEST_TIMEOUT_MS = 12_000;
 export interface CloudUser { id: string; email: string; createdAt: string; }
 export interface TestAttempt { id: string; mode: TestMode; totalQuestions: number; correctAnswers: number; completedAt: number; }
@@ -22,6 +24,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error('Сервер не ответил за 12 секунд. Проверьте подключение и повторите попытку.');
+    }
+    if (error instanceof TypeError) {
+      throw new Error('Не удалось подключиться к серверу. Перезапустите локальный сайт и повторите попытку.');
     }
     throw error;
   } finally {
