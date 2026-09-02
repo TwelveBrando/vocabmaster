@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Key, Cpu, Palette, Sliders, CheckCircle2, Eye, EyeOff, Check, AlertCircle, Languages } from 'lucide-react';
+import { X, Trash2, Key, Cpu, Palette, Settings2, Sliders, CheckCircle2, Eye, EyeOff, Check, AlertCircle, Languages } from 'lucide-react';
 import type { AISettings, UITheme, AIProvider } from '../types';
 import { cacheService } from '../services/cacheService';
 import { settingsService } from '../services/settingsService';
@@ -183,14 +183,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       />
 
       {/* Modal Surface */}
-      <div className={`relative w-full max-w-4xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all z-10 ${currentThemeConfig.modalBg} ${currentThemeConfig.cardBorder}`}>
+      <div className={`settings-modal-panel relative w-full max-w-4xl rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all z-10 ${currentThemeConfig.modalBg} ${currentThemeConfig.cardBorder}`}>
         {/* Header */}
         <div className={`flex items-center justify-between px-8 py-5 border-b ${currentThemeConfig.modalHeaderBg} ${currentThemeConfig.cardBorder}`}>
           <div className="flex items-center gap-3.5">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-white shadow-sm shrink-0 ${
-              currentThemeConfig.isLight ? 'bg-slate-900' : 'bg-cyan-500 text-slate-950'
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold shadow-sm shrink-0 ${
+              currentThemeConfig.isLight ? 'bg-slate-900 text-white' : 'bg-white/[0.10] text-white border border-white/15'
             }`}>
-              <Palette className="w-5 h-5" />
+              <Settings2 className="w-5 h-5" strokeWidth={1.7} />
             </div>
             <div>
               <h3 className={`text-xl font-extrabold tracking-tight ${currentThemeConfig.textPrimary}`}>

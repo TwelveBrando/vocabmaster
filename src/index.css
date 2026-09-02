@@ -21,6 +21,7 @@
 @layer base {
   :root {
     --app-ui-scale: 1.08;
+    --app-viewport-height: calc(100dvh / var(--app-ui-scale));
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --background: #050505;
     --foreground: #f7f7f5;
@@ -63,6 +64,11 @@
     zoom: var(--app-ui-scale);
   }
 
+  /* CSS zoom otherwise makes a 100dvh app physically taller than the viewport. */
+  .vocab-app {
+    height: var(--app-viewport-height) !important;
+  }
+
   html.lenis,
   html.lenis body {
     height: auto;
@@ -77,6 +83,30 @@
   }
 }
 
+/* `zoom` enlarges CSS viewport units too. Compensate every full-screen surface
+   so its visual bottom remains exactly at the physical viewport boundary. */
+.liquid-metal-hero {
+  min-height: var(--app-viewport-height) !important;
+}
+
+.settings-modal-panel {
+  max-height: calc(var(--app-viewport-height) * 0.9) !important;
+}
+
+.import-modal-panel {
+  max-height: calc(var(--app-viewport-height) * 0.85) !important;
+}
+
+.auth-layer {
+  overflow-y: auto;
+  align-items: safe center;
+}
+
+.auth-panel {
+  max-height: calc(var(--app-viewport-height) - 2rem);
+  overflow-y: auto;
+}
+
 /* Lenis owns the single app scroll container. Screen components used to own
    separate scrollbars; making them flow into this container fixes the case
    where a screen looked scrollable but its page could no longer move. */
@@ -84,6 +114,19 @@
   height: auto !important;
   min-height: 100% !important;
   overflow: visible !important;
+}
+
+/* Keep long dictionary pages cheap to lay out and paint. Off-screen cards keep
+   their space and are rendered normally before they enter the viewport. */
+.dictionary-word-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 112px;
+}
+
+/* Isolate the full-screen WebGL surface from content repaints while scrolling. */
+.liquid-metal-backdrop,
+.prisma-noir-backdrop {
+  contain: strict;
 }
 
 /* A soft fade joins the transparent navigation area to the content instead of
@@ -198,7 +241,7 @@
 @media (hover: hover) {
   .theme-prisma_noir .flow-button:hover { border-color: transparent !important; border-radius: 12px !important; color: var(--flow-hover-ink) !important; transform: none !important; }
   .theme-prisma_noir .flow-button:hover .flow-button__label { letter-spacing: .025em; transform: scale(1.02); }
-  .theme-prisma_noir .flow-button:hover .flow-button__fill { width: 220px; height: 220px; opacity: 1; }
+  .theme-prisma_noir .flow-button:hover .flow-button__fill { width: 180%; height: 500%; opacity: 1; }
 }
 .theme-prisma_noir .flow-button:active { transform: scale(.95) !important; }
 .theme-prisma_noir .flow-button { --flow-ink: #e1e0cc; --flow-fill: #e1e0cc; --flow-hover-ink: #0d0d0c; }
@@ -217,10 +260,11 @@
   color: #e1e0cc !important;
   transition: border-color 600ms cubic-bezier(.23,1,.32,1), color 600ms cubic-bezier(.23,1,.32,1), border-radius 600ms cubic-bezier(.23,1,.32,1), transform 260ms cubic-bezier(.23,1,.32,1) !important;
 }
-.theme-prisma_noir .prisma-flow-surface::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; width: 16px; height: 16px; border-radius: 50%; opacity: 0; transform: translate(-50%, -50%); background: #e1e0cc; transition: width 800ms cubic-bezier(.19,1,.22,1), height 800ms cubic-bezier(.19,1,.22,1), opacity 800ms cubic-bezier(.19,1,.22,1); }
+.theme-prisma_noir .prisma-flow-surface::before { content: ''; position: absolute; z-index: 0; left: 50%; top: 50%; width: 16px; height: 16px; border-radius: 50%; opacity: 0; transform: translate(-50%, -50%); background: #e1e0cc; transition: width 800ms cubic-bezier(.19,1,.22,1), height 800ms cubic-bezier(.19,1,.22,1), opacity 800ms cubic-bezier(.19,1,.22,1); }
+.theme-prisma_noir .prisma-flow-surface > * { position: relative; z-index: 1; }
 @media (hover: hover) {
   .theme-prisma_noir .prisma-flow-surface:hover { border-color: transparent !important; border-radius: 12px !important; color: #0d0d0c !important; transform: none !important; }
-  .theme-prisma_noir .prisma-flow-surface:hover::before { width: 240px; height: 240px; opacity: 1; }
+  .theme-prisma_noir .prisma-flow-surface:hover::before { width: 180%; height: 500%; opacity: 1; }
 }
 .theme-prisma_noir .prisma-flow-surface:active { transform: scale(.95) !important; }
 @keyframes prismaDrift { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 2%, 0) scale(1.05); } }
@@ -279,6 +323,18 @@
 .theme-language_explorer textarea:focus,
 .theme-language_explorer select:focus {
   box-shadow: 0 0 0 4px rgb(255 255 255 / 12%), 0 18px 50px rgb(0 0 0 / 25%) !important;
+}
+
+@media (prefers-reduced-motion: reduce), (update: slow) {
+  .prisma-noir-backdrop::before,
+  .theme-prisma_noir main > *,
+  .theme-language_explorer main > *,
+  .animate-fadeIn,
+  .import-modal-backdrop,
+  .import-modal-panel,
+  .auth-panel {
+    animation: none !important;
+  }
 }
 
 /* Existing feature screens used their own neon accent utilities. The liquid-metal

@@ -391,7 +391,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <div
                   key={entry.id}
                   onClick={() => handleToggleWord(entry)}
-                  className={`p-4.5 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 relative select-none group active:scale-98 ${
+                  className={`dictionary-word-card p-4.5 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 relative select-none group active:scale-98 ${
                     isSaved
                       ? theme.isLight
                         ? 'bg-emerald-50/95 border-2 border-emerald-400 text-emerald-950 shadow-sm ring-1 ring-emerald-500/30'

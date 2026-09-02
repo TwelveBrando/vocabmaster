@@ -13,6 +13,9 @@ interface LiquidMetalHeroProps {
   onPrimaryCtaClick: () => void;
   onSecondaryCtaClick?: () => void;
   features?: string[];
+  shaderMaxPixelCount?: number;
+  shaderMinPixelRatio?: number;
+  prefersReducedMotion?: boolean;
 }
 
 const containerVariants = {
@@ -32,10 +35,22 @@ export default function LiquidMetalHero({
   onPrimaryCtaClick,
   onSecondaryCtaClick,
   features = [],
+  shaderMaxPixelCount,
+  shaderMinPixelRatio,
+  prefersReducedMotion = false,
 }: LiquidMetalHeroProps) {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black">
-      <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.42} style={{ position: 'fixed', inset: 0, zIndex: 0 }} />
+    <section className="liquid-metal-hero relative flex min-h-screen items-center justify-center overflow-hidden bg-black">
+      <LiquidMetal
+        {...liquidMetalPresets[2].params}
+        colorBack="#080808"
+        colorTint="#e7e7e4"
+        speed={prefersReducedMotion ? 0 : 0.42}
+        minPixelRatio={shaderMinPixelRatio}
+        maxPixelCount={shaderMaxPixelCount}
+        className="liquid-metal-backdrop"
+        style={{ position: 'fixed', inset: 0, zIndex: 0 }}
+      />
       <div className="pointer-events-none fixed inset-0 z-[1] bg-black/45" />
       <div className="container relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
         <motion.div className="space-y-8 text-center" variants={containerVariants} initial="hidden" animate="visible" transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}>

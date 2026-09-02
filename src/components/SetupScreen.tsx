@@ -113,6 +113,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
   // Safe keyboard navigation (never intercepts browser zoom ctrl +, ctrl -, ctrl 0)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof Element && e.target.closest('.auth-layer')) return;
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleStart();

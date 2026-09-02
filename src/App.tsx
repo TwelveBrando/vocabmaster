@@ -25,6 +25,7 @@ import { getSmartFallbackDistractors } from './services/distractorPool';
 import { translatorService } from './services/translatorService';
 import { THEMES } from './styles/themes';
 import { cloudSyncService, type CloudUser } from './services/cloudSyncService';
+import { usePerformanceProfile } from './hooks/usePerformanceProfile';
 
 import type { SessionState } from './services/settingsService';
 
@@ -67,6 +68,7 @@ export function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isWelcomeScreenOpen, setIsWelcomeScreenOpen] = useState(true);
   const [isContentScrolled, setIsContentScrolled] = useState(false);
+  const performanceProfile = usePerformanceProfile();
 
   // Grammar Module State
   const [currentGrammarLecture, setCurrentGrammarLecture] = useState<GrammarLecture | null>(null);
@@ -134,7 +136,7 @@ export function App() {
   useEffect(() => {
     const wrapper = scrollWrapperRef.current;
     const content = scrollContentRef.current;
-    if (!wrapper || !content || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!wrapper || !content || performanceProfile.prefersReducedMotion) return;
 
     const lenis = new Lenis({
       wrapper,
@@ -143,10 +145,21 @@ export function App() {
       smoothWheel: true,
       wheelMultiplier: 1,
       touchMultiplier: 1.5,
-      autoRaf: true,
+      autoRaf: false,
     });
-    return () => lenis.destroy();
-  }, [isWelcomeScreenOpen]);
+
+    let animationFrame = 0;
+    const renderScroll = (time: number) => {
+      if (!document.hidden) lenis.raf(time);
+      animationFrame = window.requestAnimationFrame(renderScroll);
+    };
+    animationFrame = window.requestAnimationFrame(renderScroll);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      lenis.destroy();
+    };
+  }, [isWelcomeScreenOpen, performanceProfile.prefersReducedMotion]);
 
   const handleSaveSettings = (newSettings: AISettings) => {
     setSettings(newSettings);
@@ -337,6 +350,9 @@ export function App() {
           setIsWelcomeScreenOpen(false);
         }}
         features={["Тесты по вашим словам", "Грамматика A1", "Личный словарь"]}
+        shaderMaxPixelCount={performanceProfile.shaderMaxPixelCount}
+        shaderMinPixelRatio={performanceProfile.shaderMinPixelRatio}
+        prefersReducedMotion={performanceProfile.prefersReducedMotion}
       />
     );
   }
@@ -345,7 +361,16 @@ export function App() {
     <div className={`vocab-app theme-${currentTheme} h-[100dvh] ${currentThemeConfig.pageBg} flex flex-col font-sans relative overflow-hidden transition-colors duration-500`}>
       {currentTheme === 'language_explorer' ? (
         <div className="pointer-events-none fixed inset-0 z-0">
-          <LiquidMetal {...liquidMetalPresets[2].params} colorBack="#080808" colorTint="#e7e7e4" speed={0.35} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }} />
+          <LiquidMetal
+            {...liquidMetalPresets[2].params}
+            colorBack="#080808"
+            colorTint="#e7e7e4"
+            speed={performanceProfile.prefersReducedMotion ? 0 : 0.35}
+            minPixelRatio={performanceProfile.shaderMinPixelRatio}
+            maxPixelCount={performanceProfile.shaderMaxPixelCount}
+            className="liquid-metal-backdrop"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.58 }}
+          />
           <div className="absolute inset-0 bg-black/45" />
         </div>
       ) : (
