@@ -5,6 +5,24 @@ import { generateAcceptableRussianVariants } from './wordParser';
 import { getSmartFallbackDistractors } from './distractorPool';
 
 const AI_CONTEXT_VERSION = 1;
+const GEMINI_RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+const wait = (delayMs: number): Promise<void> => new Promise(resolve => setTimeout(resolve, delayMs));
+
+const readGeminiError = async (response: Response): Promise<string> => {
+  const raw = await response.text();
+  try {
+    const parsed = JSON.parse(raw);
+    return String(parsed?.error?.message || parsed?.message || raw || response.statusText);
+  } catch {
+    return raw || response.statusText || `HTTP ${response.status}`;
+  }
+};
+
+const isCredentialError = (status: number, message: string): boolean =>
+  status === 401 ||
+  status === 403 ||
+  (status === 400 && /api.?key|credential|permission|unauth/i.test(message));
 
 interface AIWordRequest {
   english: string;
@@ -142,15 +160,21 @@ Return ONLY a valid JSON object with the following schema:
   ): Promise<CachedWordData[]> {
     const apiKey = settings.apiKey;
     const prompt = this.buildPrompt(words);
+    const apiHeaders = {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    };
 
     let candidateModels: string[] = [];
+    let modelListAvailable = false;
 
     try {
       const listRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
-        { signal: AbortSignal.timeout(6000) }
+        'https://generativelanguage.googleapis.com/v1beta/models',
+        { headers: { 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(6000) }
       );
       if (listRes.ok) {
+        modelListAvailable = true;
         const listData = await listRes.json();
         if (Array.isArray(listData.models)) {
           const supportedNames: string[] = listData.models
@@ -164,69 +188,104 @@ Return ONLY a valid JSON object with the following schema:
             });
 
           const priorityOrder = [
+            settings.model,
+            'gemini-3.5-flash-lite',
             'gemini-3.5-flash',
             'gemini-3.7-flash',
             'gemini-3.6-flash',
+            'gemini-2.5-flash-lite',
             'gemini-2.5-flash',
             'gemini-flash-latest',
-            'gemini-2.5-flash-lite',
             'gemini-2.0-flash',
             'gemini-1.5-flash',
-          ];
+          ].filter((name): name is string => Boolean(name));
 
           candidateModels = [
-            ...priorityOrder.filter(p => supportedNames.includes(p)),
+            ...priorityOrder.filter((name, index) => priorityOrder.indexOf(name) === index && supportedNames.includes(name)),
             ...supportedNames.filter(s => !priorityOrder.includes(s)),
           ];
         }
+      } else {
+        const errorMessage = await readGeminiError(listRes);
+        if (isCredentialError(listRes.status, errorMessage)) {
+          throw new Error('Ключ Gemini отклонён. Создайте новый API-ключ в Google AI Studio и сохраните его в настройках.');
+        }
       }
-    } catch {
-      // fallback
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('Ключ Gemini')) throw error;
+      // A temporary failure of the model-list endpoint should not block generation.
     }
 
     if (candidateModels.length === 0) {
-      candidateModels = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-flash-latest'];
+      candidateModels = Array.from(new Set([
+        settings.model,
+        'gemini-3.5-flash-lite',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-flash-latest',
+      ].filter((name): name is string => Boolean(name))));
     }
 
-    const modelsToTry = candidateModels.slice(0, 4);
+    const modelsToTry = candidateModels.slice(0, 5);
     let lastError = '';
 
     for (const model of modelsToTry) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(12000),
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              response_mime_type: 'application/json',
-              temperature: 0.3,
-            },
-          }),
-        });
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: apiHeaders,
+            signal: AbortSignal.timeout(16000),
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: 0.3,
+              },
+            }),
+          });
 
-        if (!res.ok) {
-          const errBody = await res.text();
-          lastError = `Model ${model} (${res.status}): ${errBody}`;
-          continue;
+          if (!res.ok) {
+            const errorMessage = await readGeminiError(res);
+            if (isCredentialError(res.status, errorMessage)) {
+              throw new Error('Ключ Gemini отклонён. Проверьте API-ключ в настройках.');
+            }
+
+            lastError = `${model}: HTTP ${res.status} — ${errorMessage}`;
+            if (GEMINI_RETRYABLE_STATUSES.has(res.status) && attempt === 0) {
+              await wait(900);
+              continue;
+            }
+            break;
+          }
+
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!text) {
+            lastError = `${model}: Gemini вернул пустой ответ.`;
+            break;
+          }
+
+          return this.parseJsonResponse(text);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.startsWith('Ключ Gemini')) throw error;
+          lastError = `${model}: ${message}`;
+          if (attempt === 0) {
+            await wait(900);
+            continue;
+          }
+          break;
         }
-
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) continue;
-
-        return this.parseJsonResponse(text);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        lastError = msg;
-        continue;
       }
     }
 
-    throw new Error(lastError || 'Не удалось выполнить запрос к Gemini API');
+    const prefix = modelListAvailable
+      ? 'Доступные Gemini-модели временно не отвечают.'
+      : 'Не удалось получить список Gemini-моделей.';
+    throw new Error(`${prefix} ${lastError || 'Повторите позже.'}`);
   }
 
   private static async queryGroqOrOpenAI(

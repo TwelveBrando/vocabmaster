@@ -196,13 +196,13 @@ Return ONLY valid JSON:
       let text = '';
       if (settings.provider === 'gemini') {
         const model = settings.model || 'gemini-2.0-flash';
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': settings.apiKey },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { response_mime_type: 'application/json' },
+            generationConfig: { responseMimeType: 'application/json' },
           }),
           signal: AbortSignal.timeout(6000),
         });
