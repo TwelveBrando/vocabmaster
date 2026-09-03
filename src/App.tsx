@@ -79,6 +79,9 @@ export function App() {
   // Preparation state
   const [prepProgress, setPrepProgress] = useState({ processed: 0, total: 0, message: '' });
   const [prepErrors, setPrepErrors] = useState<string[]>([]);
+  const [isQuestionLoading, setIsQuestionLoading] = useState(false);
+  const [testRunId, setTestRunId] = useState(0);
+  const testPreparationRunRef = useRef(0);
 
   // Test state
   const [testSourceType, setTestSourceType] = useState<'vocab_bank' | 'custom_input'>('custom_input');
@@ -174,6 +177,67 @@ export function App() {
     });
   }, []);
 
+  const streamAIPreparedTest = async (
+    inputItems: (string | CachedWordData)[],
+    mode: TestMode,
+    numOptions: number,
+    onComplete?: (data: CachedWordData[]) => void,
+  ) => {
+    const runId = ++testPreparationRunRef.current;
+    const readyWords = new Set<string>();
+    setTestRunId(runId);
+    setTestQuestions([]);
+    setCurrentWordsData([]);
+    setPrepErrors([]);
+    setIsQuestionLoading(true);
+    setPrepProgress({ processed: 0, total: inputItems.length, message: 'ИИ готовит первую пачку слов...' });
+    setAppState('preparing');
+
+    try {
+      const { data, errors } = await AIService.fetchWordsData(
+        inputItems,
+        settings,
+        (processed, total, message) => {
+          if (testPreparationRunRef.current === runId) {
+            setPrepProgress({ processed, total, message });
+          }
+        },
+        (batch, processed, total) => {
+          if (testPreparationRunRef.current !== runId) return;
+          const uniqueBatch = batch.filter(item => {
+            const key = item.english.toLowerCase().trim();
+            if (!key || readyWords.has(key)) return false;
+            readyWords.add(key);
+            return true;
+          });
+          if (uniqueBatch.length === 0) return;
+
+          setCurrentWordsData(previous => [...previous, ...uniqueBatch]);
+          setTestQuestions(previous => [...previous, ...buildTestQuestions(uniqueBatch, mode, numOptions)]);
+          setPrepProgress({
+            processed,
+            total,
+            message: processed < total ? 'ИИ готовит следующие слова...' : 'Все слова готовы',
+          });
+          setAppState('testing');
+        },
+      );
+
+      if (testPreparationRunRef.current !== runId) return;
+      onComplete?.(data);
+      refreshCounts();
+      if (errors.length > 0) setPrepErrors(errors);
+      setPrepProgress({ processed: data.length, total: inputItems.length, message: 'Все слова готовы' });
+      setIsQuestionLoading(false);
+      if (data.length > 0) setAppState('testing');
+    } catch (err: unknown) {
+      if (testPreparationRunRef.current !== runId) return;
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setPrepErrors([`Не удалось подготовить слова: ${errorMsg}`]);
+      setIsQuestionLoading(false);
+    }
+  };
+
   // START TEST VIA CUSTOM TEXT INPUT
   const startCustomTextTest = async (
     inputText: string,
@@ -195,6 +259,9 @@ export function App() {
     const hasApiKey = settings.apiKey && settings.apiKey.trim() !== '';
 
     if (!hasApiKey) {
+      const runId = ++testPreparationRunRef.current;
+      setTestRunId(runId);
+      setIsQuestionLoading(false);
       const dataWithSmartDistractors: CachedWordData[] = parsed.isFormattedWithTranslations
         ? parsed.wordsData
         : await Promise.all(inputItems.map(async (item) => {
@@ -226,36 +293,7 @@ export function App() {
       return;
     }
 
-    setAppState('preparing');
-    setPrepErrors([]);
-    setPrepProgress({ processed: 0, total: inputItems.length, message: 'ИИ подбирает варианты ответов...' });
-
-    try {
-      const { data, errors } = await AIService.fetchWordsData(
-        inputItems,
-        settings,
-        (processed, total, message) => {
-          setPrepProgress({ processed, total, message });
-        }
-      );
-
-      refreshCounts();
-      setCurrentWordsData(data);
-
-      if (errors.length > 0) {
-        setPrepErrors(errors);
-      }
-
-      const questions = buildTestQuestions(data, mode, numOptions);
-      setTestQuestions(questions);
-
-      setTimeout(() => {
-        setAppState('testing');
-      }, 300);
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setPrepErrors([`Не удалось подготовить слова: ${errorMsg}`]);
-    }
+    await streamAIPreparedTest(inputItems, mode, numOptions);
   };
 
   // START TEST DIRECTLY FROM PERSONAL VOCABULARY BANK
@@ -273,36 +311,24 @@ export function App() {
     const hasApiKey = settings.apiKey && settings.apiKey.trim() !== '';
 
     if (!hasApiKey) {
+      const runId = ++testPreparationRunRef.current;
+      setTestRunId(runId);
+      setIsQuestionLoading(false);
       setCurrentWordsData(words);
       setTestQuestions(buildTestQuestions(words, mode, numOptions));
       setAppState('testing');
       return;
     }
 
-    setAppState('preparing');
-    setPrepErrors([]);
-    setPrepProgress({ processed: 0, total: words.length, message: 'ИИ создаёт контекст для слов...' });
-
-    try {
-      const { data, errors } = await AIService.fetchWordsData(
-        words,
-        settings,
-        (processed, total, message) => setPrepProgress({ processed, total, message }),
-      );
-
+    await streamAIPreparedTest(words, mode, numOptions, data => {
       vocabularyService.applyAIEnrichment(data);
-      refreshCounts();
-      setCurrentWordsData(data);
-      if (errors.length > 0) setPrepErrors(errors);
-      setTestQuestions(buildTestQuestions(data, mode, numOptions));
-      setTimeout(() => setAppState('testing'), 300);
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setPrepErrors([`Не удалось подготовить слова: ${errorMsg}`]);
-    }
+      setVocabularyRevision(revision => revision + 1);
+    });
   };
 
   const handleFinishTest = (results: QuestionResult[]) => {
+    testPreparationRunRef.current += 1;
+    setIsQuestionLoading(false);
     setTestResults(results);
     // Record accuracy for vocabulary items
     for (const r of results) {
@@ -318,6 +344,9 @@ export function App() {
 
   const handleRestartAll = () => {
     if (currentWordsData.length > 0) {
+      const runId = ++testPreparationRunRef.current;
+      setTestRunId(runId);
+      setIsQuestionLoading(false);
       const questions = buildTestQuestions(currentWordsData, sessionState.mode, sessionState.numOptions);
       setTestQuestions(questions);
       setAppState('testing');
@@ -342,6 +371,9 @@ export function App() {
     );
 
     if (mistakeItems.length > 0) {
+      const runId = ++testPreparationRunRef.current;
+      setTestRunId(runId);
+      setIsQuestionLoading(false);
       const questions = buildTestQuestions(mistakeItems, sessionState.mode, sessionState.numOptions);
       setTestQuestions(questions);
       setAppState('testing');
@@ -349,6 +381,8 @@ export function App() {
   };
 
   const handleBackToSetup = () => {
+    testPreparationRunRef.current += 1;
+    setIsQuestionLoading(false);
     setAppState('setup');
   };
 
@@ -407,6 +441,8 @@ export function App() {
       <Header
         currentView={appState === 'profile' ? 'profile' : isGrammarActive ? 'grammar' : 'test'}
         onNavigate={(view) => {
+          testPreparationRunRef.current += 1;
+          setIsQuestionLoading(false);
           if (view === 'profile') setAppState('profile');
           else if (view === 'grammar') setAppState('grammar_hub');
           else setAppState('setup');
@@ -450,6 +486,10 @@ export function App() {
             onStartVocabularyTest={(level) => {
               startVocabularyBankTest(level, 20, sessionState.mode, sessionState.numOptions);
             }}
+            onVocabularyPrepared={() => {
+              refreshCounts();
+              setVocabularyRevision(revision => revision + 1);
+            }}
           />
         )}
 
@@ -481,11 +521,14 @@ export function App() {
 
         {appState === 'testing' && testQuestions.length > 0 && (
           <TestScreen
+            key={testRunId}
             questions={testQuestions}
             settings={settings}
             currentTheme={currentTheme}
             onFinishTest={handleFinishTest}
             onExit={handleBackToSetup}
+            isLoadingQuestions={isQuestionLoading}
+            loadingProgress={prepProgress}
           />
         )}
 

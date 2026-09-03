@@ -48,6 +48,11 @@ export function hasUsefulDisambiguationContext(item: Pick<CachedWordData, 'russi
 }
 
 export class AIService {
+  private static geminiRuntimeKey = '';
+  private static geminiSupportedModels: string[] | null = null;
+  private static preferredGeminiModel = '';
+  private static unavailableGeminiModels = new Set<string>();
+
   private static buildPrompt(words: AIWordRequest[]): string {
     return `You are a professional lexicographer and vocabulary testing engine for an English-Russian vocabulary trainer app.
 Analyze the following English words/phrases${words.some(w => w.userRussian) ? ' and their provided user translations' : ''}:
@@ -165,19 +170,27 @@ Return ONLY a valid JSON object with the following schema:
       'x-goog-api-key': apiKey,
     };
 
-    let candidateModels: string[] = [];
-    let modelListAvailable = false;
+    if (this.geminiRuntimeKey !== apiKey) {
+      this.geminiRuntimeKey = apiKey;
+      this.geminiSupportedModels = null;
+      this.preferredGeminiModel = '';
+      this.unavailableGeminiModels.clear();
+    }
 
-    try {
-      const listRes = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models',
-        { headers: { 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(6000) }
-      );
-      if (listRes.ok) {
-        modelListAvailable = true;
-        const listData = await listRes.json();
-        if (Array.isArray(listData.models)) {
-          const supportedNames: string[] = listData.models
+    let candidateModels: string[] = [];
+    let modelListAvailable = this.geminiSupportedModels !== null;
+
+    if (this.geminiSupportedModels === null) {
+      try {
+        const listRes = await fetch(
+          'https://generativelanguage.googleapis.com/v1beta/models',
+          { headers: { 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(6000) }
+        );
+        if (listRes.ok) {
+          modelListAvailable = true;
+          const listData = await listRes.json();
+          if (Array.isArray(listData.models)) {
+            this.geminiSupportedModels = listData.models
             .filter((m: { name?: string; supportedGenerationMethods?: string[] }) =>
               m.name && Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent')
             )
@@ -186,34 +199,38 @@ Return ONLY a valid JSON object with the following schema:
               const lower = name.toLowerCase();
               return !lower.includes('tts') && !lower.includes('audio') && !lower.includes('embedding') && !lower.includes('imagen') && !lower.includes('bison');
             });
-
-          const priorityOrder = [
-            settings.model,
-            'gemini-3.5-flash-lite',
-            'gemini-3.5-flash',
-            'gemini-3.7-flash',
-            'gemini-3.6-flash',
-            'gemini-2.5-flash-lite',
-            'gemini-2.5-flash',
-            'gemini-flash-latest',
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
-          ].filter((name): name is string => Boolean(name));
-
-          candidateModels = [
-            ...priorityOrder.filter((name, index) => priorityOrder.indexOf(name) === index && supportedNames.includes(name)),
-            ...supportedNames.filter(s => !priorityOrder.includes(s)),
-          ];
+          }
+        } else {
+          const errorMessage = await readGeminiError(listRes);
+          if (isCredentialError(listRes.status, errorMessage)) {
+            throw new Error('Ключ Gemini отклонён. Создайте новый API-ключ в Google AI Studio и сохраните его в настройках.');
+          }
         }
-      } else {
-        const errorMessage = await readGeminiError(listRes);
-        if (isCredentialError(listRes.status, errorMessage)) {
-          throw new Error('Ключ Gemini отклонён. Создайте новый API-ключ в Google AI Studio и сохраните его в настройках.');
-        }
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('Ключ Gemini')) throw error;
+        // A temporary failure of the model-list endpoint should not block generation.
       }
-    } catch (error) {
-      if (error instanceof Error && error.message.startsWith('Ключ Gemini')) throw error;
-      // A temporary failure of the model-list endpoint should not block generation.
+    }
+
+    const priorityOrder = [
+      this.preferredGeminiModel,
+      settings.model,
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+    ].filter((name): name is string => Boolean(name));
+
+    if (this.geminiSupportedModels) {
+      candidateModels = [
+        ...priorityOrder.filter((name, index) => priorityOrder.indexOf(name) === index && this.geminiSupportedModels?.includes(name)),
+        ...this.geminiSupportedModels.filter(name => !priorityOrder.includes(name)),
+      ];
     }
 
     if (candidateModels.length === 0) {
@@ -226,7 +243,9 @@ Return ONLY a valid JSON object with the following schema:
       ].filter((name): name is string => Boolean(name))));
     }
 
-    const modelsToTry = candidateModels.slice(0, 5);
+    const modelsToTry = candidateModels
+      .filter(model => !this.unavailableGeminiModels.has(model))
+      .slice(0, 5);
     let lastError = '';
 
     for (const model of modelsToTry) {
@@ -254,6 +273,7 @@ Return ONLY a valid JSON object with the following schema:
             }
 
             lastError = `${model}: HTTP ${res.status} — ${errorMessage}`;
+            if (res.status === 404) this.unavailableGeminiModels.add(model);
             if (GEMINI_RETRYABLE_STATUSES.has(res.status) && attempt === 0) {
               await wait(900);
               continue;
@@ -268,6 +288,7 @@ Return ONLY a valid JSON object with the following schema:
             break;
           }
 
+          this.preferredGeminiModel = model;
           return this.parseJsonResponse(text);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -327,7 +348,8 @@ Return ONLY a valid JSON object with the following schema:
   static async fetchWordsData(
     wordsInput: (string | CachedWordData)[],
     settings: AISettings,
-    onProgress?: (processed: number, total: number, message: string) => void
+    onProgress?: (processed: number, total: number, message: string) => void,
+    onBatchReady?: (words: CachedWordData[], processed: number, total: number) => void,
   ): Promise<{ data: CachedWordData[]; errors: string[] }> {
     const normalizedInput = wordsInput.map(item => {
       if (typeof item === 'string') {
@@ -379,6 +401,9 @@ Return ONLY a valid JSON object with the following schema:
     if (onProgress) {
       onProgress(results.length, total, `Загружено из кэша: ${results.length}/${total}`);
     }
+    if (results.length > 0) {
+      onBatchReady?.([...results], results.length, total);
+    }
 
     if (missing.length === 0) {
       return { data: results, errors };
@@ -390,6 +415,7 @@ Return ONLY a valid JSON object with the following schema:
         errors.push('API-ключ не указан в настройках (⚙️). Варианты ответов сгенерированы по грамматическим категориям. Укажите ключ Gemini/Groq для генерации уникальных вариантов ИИ.');
       }
 
+      const fallbackReady: CachedWordData[] = [];
       for (const m of missing) {
         if (m.initialData) {
           const targetRussian = m.initialData.russian || m.initialData.disambiguationHint;
@@ -398,6 +424,7 @@ Return ONLY a valid JSON object with the following schema:
           m.initialData.acceptableRussian = Array.from(new Set([...(m.initialData.acceptableRussian || []), ...expanded]));
           cacheService.saveWord(m.initialData);
           results.push(m.initialData);
+          fallbackReady.push(m.initialData);
         } else {
           const known = KNOWN_RUSSIAN_SYNONYMS[m.english.toLowerCase()] || [];
           const primaryRussian = known[0] || m.english;
@@ -413,13 +440,15 @@ Return ONLY a valid JSON object with the following schema:
           };
           cacheService.saveWord(fbItem);
           results.push(fbItem);
+          fallbackReady.push(fbItem);
         }
       }
+      if (fallbackReady.length > 0) onBatchReady?.(fallbackReady, results.length, total);
       return { data: results, errors };
     }
 
     // 3. Query AI in batches for all missing words to get complete synonyms & clever distractors
-    const BATCH_SIZE = 15;
+    const BATCH_SIZE = 6;
     for (let i = 0; i < missing.length; i += BATCH_SIZE) {
       const batch = missing.slice(i, i + BATCH_SIZE);
       if (onProgress) {
@@ -432,6 +461,7 @@ Return ONLY a valid JSON object with the following schema:
 
       try {
         let batchResults: CachedWordData[] = [];
+        const readyInBatch: CachedWordData[] = [];
         if (settings.provider === 'gemini') {
           batchResults = await this.queryGemini(batch, settings);
         } else if (settings.provider === 'groq') {
@@ -479,6 +509,7 @@ Return ONLY a valid JSON object with the following schema:
 
         cacheService.saveBatchWords(batchResults);
         results.push(...batchResults);
+        readyInBatch.push(...batchResults);
 
         // Fill any words the model missed
         const returnedSet = new Set(batchResults.map(b => b.english.toLowerCase()));
@@ -495,11 +526,14 @@ Return ONLY a valid JSON object with the following schema:
               timestamp: Date.now(),
             };
             results.push(fallbackItem);
+            readyInBatch.push(fallbackItem);
           }
         }
+        onBatchReady?.(readyInBatch, results.length, total);
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         errors.push(`ИИ запрос: ${errorMsg}`);
+        const fallbackItems: CachedWordData[] = [];
         for (const item of batch) {
           const targetRussian = item.userRussian || item.english;
           const fallbackItem: CachedWordData = item.initialData || {
@@ -512,7 +546,9 @@ Return ONLY a valid JSON object with the following schema:
             timestamp: Date.now(),
           };
           results.push(fallbackItem);
+          fallbackItems.push(fallbackItem);
         }
+        onBatchReady?.(fallbackItems, results.length, total);
       }
     }
 

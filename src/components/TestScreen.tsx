@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, X, CheckCircle2, XCircle, CornerDownLeft, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Check, X, CheckCircle2, XCircle, CornerDownLeft, Sparkles, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import type { TestQuestion, QuestionResult, AISettings, UITheme } from '../types';
 import { sound } from '../utils/sound';
 import { THEMES } from '../styles/themes';
@@ -11,6 +11,8 @@ interface TestScreenProps {
   currentTheme: UITheme;
   onFinishTest: (results: QuestionResult[]) => void;
   onExit: () => void;
+  isLoadingQuestions?: boolean;
+  loadingProgress?: { processed: number; total: number };
 }
 
 export const TestScreen: React.FC<TestScreenProps> = ({
@@ -19,6 +21,8 @@ export const TestScreen: React.FC<TestScreenProps> = ({
   currentTheme,
   onFinishTest,
   onExit,
+  isLoadingQuestions = false,
+  loadingProgress,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
@@ -29,6 +33,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
   const resultsRef = useRef<QuestionResult[]>([]);
   const [soundActive, setSoundActive] = useState(settings.soundEnabled);
   const [startTime, setStartTime] = useState<number>(Date.now());
+  const [waitingForQuestions, setWaitingForQuestions] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,11 +42,6 @@ export const TestScreen: React.FC<TestScreenProps> = ({
   const currentQuestion = questions[currentIndex];
   const total = questions.length;
   const isLast = currentIndex === total - 1;
-
-  useEffect(() => {
-    resultsRef.current = [];
-    setResults([]);
-  }, [questions]);
 
   const keepFocus = useCallback(() => {
     if (currentQuestion.mode !== 'mode1_choice' && inputRef.current) {
@@ -68,7 +68,9 @@ export const TestScreen: React.FC<TestScreenProps> = ({
       autoAdvanceTimerRef.current = null;
     }
 
-    if (isLast) {
+    if (isLast && isLoadingQuestions) {
+      setWaitingForQuestions(true);
+    } else if (isLast) {
       onFinishTest(resultsRef.current);
     } else {
       setCurrentIndex((prev) => prev + 1);
@@ -78,7 +80,23 @@ export const TestScreen: React.FC<TestScreenProps> = ({
       setIsCurrentCorrect(false);
       setTimeout(keepFocus, 20);
     }
-  }, [isLast, onFinishTest, keepFocus]);
+  }, [isLast, isLoadingQuestions, onFinishTest, keepFocus]);
+
+  useEffect(() => {
+    if (!waitingForQuestions) return;
+    if (currentIndex < questions.length - 1) {
+      setWaitingForQuestions(false);
+      setCurrentIndex(previous => previous + 1);
+      setUserInput('');
+      setSelectedOptionIndex(null);
+      setIsAnswered(false);
+      setIsCurrentCorrect(false);
+      setTimeout(keepFocus, 20);
+    } else if (!isLoadingQuestions) {
+      setWaitingForQuestions(false);
+      onFinishTest(resultsRef.current);
+    }
+  }, [waitingForQuestions, currentIndex, questions.length, isLoadingQuestions, keepFocus, onFinishTest]);
 
   const handleAnswerSubmit = useCallback((answer: string, selectedIdx?: number) => {
     if (isAnswered) {
@@ -205,6 +223,20 @@ export const TestScreen: React.FC<TestScreenProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {isLoadingQuestions && loadingProgress && (
+              <div className={`flex min-w-24 sm:min-w-40 flex-col gap-1 rounded-lg border px-2 sm:px-3 py-1.5 ${theme.kbdBg}`}>
+                <div className="flex items-center justify-between gap-3 text-[10px] font-bold">
+                  <span className="flex items-center gap-1.5"><Loader2 className={`h-3 w-3 animate-spin ${theme.accentText}`} /><span className="hidden sm:inline">Загрузка слов</span></span>
+                  <span>{loadingProgress.processed}/{loadingProgress.total}</span>
+                </div>
+                <div className={`h-1 overflow-hidden rounded-full ${theme.progressTrack}`}>
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`}
+                    style={{ width: `${loadingProgress.total ? Math.round((loadingProgress.processed / loadingProgress.total) * 100) : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
             <button
               type="button"
               onClick={(e) => {
@@ -406,6 +438,13 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {waitingForQuestions && (
+          <div className={`mt-4 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold ${theme.kbdBg}`}>
+            <Loader2 className={`h-4 w-4 animate-spin ${theme.accentText}`} />
+            Готовим следующие слова…
           </div>
         )}
       </div>

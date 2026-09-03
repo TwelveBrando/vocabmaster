@@ -61,6 +61,15 @@ export const cacheService = {
     return results;
   },
 
+  isAIContextReady(englishWord: string): boolean {
+    const cached = this.getWord(englishWord);
+    if (!cached || cached.contextSource !== 'ai' || !cached.contextVersion) return false;
+    return Boolean(
+      cached.disambiguationHint?.trim() &&
+      cached.disambiguationHint.trim().toLowerCase() !== cached.russian.trim().toLowerCase()
+    );
+  },
+
   clearCache(): void {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {

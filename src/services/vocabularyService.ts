@@ -4,6 +4,7 @@ import { getSmartFallbackDistractors } from './distractorPool';
 import { generateAcceptableRussianVariants } from './wordParser';
 import { dictionaryEngine } from './dictionaryEngine';
 import { cloudSyncService } from './cloudSyncService';
+import { cacheService } from './cacheService';
 
 const VOCABULARY_STORAGE_KEY = 'vocabmaster_user_vocabulary';
 const CUSTOM_WORDS_STORAGE_KEY = 'vocabmaster_custom_dictionary_words';
@@ -235,6 +236,10 @@ export const vocabularyService = {
       totalTests,
       accuracy,
     };
+  },
+
+  getPreparedVocabularyCount(): number {
+    return this.getUserVocabulary().filter(item => cacheService.isAIContextReady(item.word)).length;
   },
 
   getTestWordsFromVocabulary(level?: CEFRLevel | 'all', count?: number): CachedWordData[] {

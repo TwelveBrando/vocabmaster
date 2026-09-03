@@ -47,6 +47,7 @@ try {
     const originalLocalStorage = globalThis.localStorage;
     const requests = [];
     const stored = new Map();
+    let successfulGenerations = 0;
 
     globalThis.localStorage = {
       get length() { return stored.size; },
@@ -68,15 +69,18 @@ try {
       if (String(url).includes('unavailable-model')) {
         return Response.json({ error: { message: 'Model not found' } }, { status: 404 });
       }
+      const requestedEnglish = successfulGenerations++ === 0 ? 'stairs' : 'ladder';
       return Response.json({
         candidates: [{ content: { parts: [{ text: JSON.stringify({
           items: [{
-            english: 'stairs',
+            english: requestedEnglish,
             russian: 'лестница',
-            disambiguationHint: 'лестница (ступени между этажами; не переносная)',
+            disambiguationHint: requestedEnglish === 'stairs'
+              ? 'лестница (ступени между этажами; не переносная)'
+              : 'лестница (переносная, приставная)',
             distractors: ['лифт', 'коридор'],
             acceptableRussian: ['лестница'],
-            acceptableEnglish: ['stairs', 'ladder'],
+            acceptableEnglish: [requestedEnglish],
           }],
         }) }] } }],
       });
@@ -92,14 +96,28 @@ try {
         autoAdvanceCorrect: true,
         autoAdvanceDelayMs: 450,
       };
-      const { data, errors } = await AIService.fetchWordsData(['stairs'], settings);
+      const readyBatches = [];
+      const { data, errors } = await AIService.fetchWordsData(
+        ['stairs'],
+        settings,
+        undefined,
+        (batch, processed, total) => readyBatches.push({ batch, processed, total }),
+      );
 
       assert.equal(errors.length, 0);
       assert.equal(data[0].contextSource, 'ai');
       assert.deepEqual(data[0].acceptableEnglish, ['stairs']);
+      assert.equal(readyBatches.length, 1);
+      assert.equal(readyBatches[0].batch[0].english, 'stairs');
+      assert.deepEqual([readyBatches[0].processed, readyBatches[0].total], [1, 1]);
       assert.equal(requests.filter(request => request.url.includes('unavailable-model')).length, 1);
       assert.equal(requests.every(request => !request.url.includes('secret-test-key')), true);
       assert.equal(requests.every(request => request.headers.get('x-goog-api-key') === 'secret-test-key'), true);
+
+      const second = await AIService.fetchWordsData(['ladder'], settings);
+      assert.equal(second.data[0].english, 'ladder');
+      assert.equal(requests.filter(request => request.url.endsWith('/models')).length, 1);
+      assert.equal(requests.filter(request => request.url.includes('unavailable-model')).length, 1);
     } finally {
       globalThis.fetch = originalFetch;
       globalThis.localStorage = originalLocalStorage;

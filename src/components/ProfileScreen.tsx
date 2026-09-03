@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History } from 'lucide-react';
+import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History, Download } from 'lucide-react';
 import type { CEFRLevel, DictionaryEntry, UITheme, AISettings } from '../types';
 import { vocabularyService } from '../services/vocabularyService';
 import { CEFR_LEVELS_META } from '../data/cefrDictionary';
 import { THEMES } from '../styles/themes';
 import { ImportWordsModal } from './ImportWordsModal';
 import { cloudSyncService, type TestAttempt } from '../services/cloudSyncService';
+import { AIService } from '../services/aiService';
 
 interface ProfileScreenProps {
   currentTheme: UITheme;
   settings: AISettings;
   vocabularyRevision: number;
   onStartVocabularyTest: (level?: CEFRLevel | 'all') => void;
+  onVocabularyPrepared?: () => void;
 }
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -21,6 +23,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   settings,
   vocabularyRevision,
   onStartVocabularyTest,
+  onVocabularyPrepared,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLetter, setSelectedLetter] = useState<string>('');
@@ -33,6 +36,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [history, setHistory] = useState<TestAttempt[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [preparedWords, setPreparedWords] = useState(() => vocabularyService.getPreparedVocabularyCount());
+  const [downloadProgress, setDownloadProgress] = useState<{ processed: number; total: number } | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
 
@@ -40,6 +46,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const vocab = vocabularyService.getUserVocabulary();
     setUserVocabWords(new Set(vocab.map(v => v.word.toLowerCase())));
     setStats(vocabularyService.getVocabularyStats());
+    setPreparedWords(vocabularyService.getPreparedVocabularyCount());
   };
 
   useEffect(() => {
@@ -112,6 +119,37 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
+  const handleDownloadVocabulary = async () => {
+    const words = vocabularyService.getTestWordsFromVocabulary('all');
+    if (words.length === 0) return;
+    if (!settings.apiKey?.trim()) {
+      setDownloadError('Сначала добавьте API-ключ AI-провайдера в настройках.');
+      return;
+    }
+
+    setDownloadError('');
+    setDownloadProgress({ processed: 0, total: words.length });
+    try {
+      const { data, errors } = await AIService.fetchWordsData(
+        words,
+        settings,
+        (processed, total) => setDownloadProgress({ processed, total }),
+        (_batch, processed, total) => {
+          setPreparedWords(vocabularyService.getPreparedVocabularyCount());
+          setDownloadProgress({ processed, total });
+        },
+      );
+      vocabularyService.applyAIEnrichment(data);
+      refreshVocabState();
+      onVocabularyPrepared?.();
+      if (errors.length > 0) setDownloadError(errors[0]);
+    } catch (error) {
+      setDownloadError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDownloadProgress(null);
+    }
+  };
+
   return (
     <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-[1550px] flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 animate-fadeIn select-none sm:gap-7 sm:px-10 sm:py-8">
       {/* Top Banner & Main Action Buttons */}
@@ -143,6 +181,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {stats.totalWords > 0 && (
             <button
               type="button"
+              disabled={Boolean(downloadProgress)}
+              onClick={handleDownloadVocabulary}
+              className={`h-11 flex-1 sm:flex-none px-3 sm:px-5 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-98 ${
+                downloadProgress
+                  ? 'cursor-wait opacity-70'
+                  : 'cursor-pointer'
+              } ${theme.isLight ? 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900' : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white'}`}
+            >
+              {downloadProgress ? <Loader2 className="h-4 w-4 animate-spin text-cyan-400" /> : <Download className="h-4 w-4 text-cyan-400" />}
+              <span>{downloadProgress ? `Загружаем ${downloadProgress.processed}/${downloadProgress.total}` : 'Загрузить AI-контекст'}</span>
+            </button>
+          )}
+
+          {stats.totalWords > 0 && (
+            <button
+              type="button"
               onClick={() => onStartVocabularyTest('all')}
             className={`h-11 flex-1 sm:flex-none px-3 sm:px-6 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
             >
@@ -153,8 +207,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* 3 Balanced Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {downloadProgress && (
+        <div className={`-mt-2 rounded-full h-2 overflow-hidden ${theme.progressTrack}`}>
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`}
+            style={{ width: `${downloadProgress.total ? Math.round((downloadProgress.processed / downloadProgress.total) * 100) : 0}%` }}
+          />
+        </div>
+      )}
+      {downloadError && <div className="-mt-2 text-xs font-semibold text-amber-500">{downloadError}</div>}
+
+      {/* Balanced Metric Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* Total Words Card */}
         <div className={`${theme.cardBg} ${theme.cardBorder} p-5.5 rounded-2xl shadow-sm flex items-center gap-4`}>
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
@@ -165,6 +229,18 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <div>
             <div className={`text-xs font-bold uppercase tracking-wider ${theme.textMuted}`}>В вашем запасе</div>
             <div className={`text-3xl font-extrabold ${theme.textPrimary}`}>{stats.totalWords} <span className="text-sm font-semibold opacity-70">слов</span></div>
+          </div>
+        </div>
+
+        <div className={`${theme.cardBg} ${theme.cardBorder} p-5.5 rounded-2xl shadow-sm flex items-center gap-4`}>
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+            theme.isLight ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+          }`}>
+            <Download className="w-6 h-6" strokeWidth={1.7} />
+          </div>
+          <div>
+            <div className={`text-xs font-bold uppercase tracking-wider ${theme.textMuted}`}>AI-контекст загружен</div>
+            <div className={`text-3xl font-extrabold ${theme.textPrimary}`}>{preparedWords} <span className="text-sm font-semibold opacity-70">из {stats.totalWords}</span></div>
           </div>
         </div>
 
