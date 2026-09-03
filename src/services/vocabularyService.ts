@@ -262,11 +262,36 @@ export const vocabularyService = {
         distractors: getSmartFallbackDistractors(targetRussian, 6, item.word),
         acceptableRussian: generateAcceptableRussianVariants(item.disambiguationHint || targetRussian, item.word),
         acceptableEnglish: [item.word.toLowerCase().trim()],
+        contextSource: item.disambiguationHint && item.disambiguationHint !== targetRussian ? 'provided' : 'fallback',
         level: item.level,
         partOfSpeech: item.partOfSpeech,
         timestamp: Date.now(),
       };
     });
+  },
+
+  applyAIEnrichment(wordsData: CachedWordData[]): void {
+    if (wordsData.length === 0) return;
+
+    const enrichedByWord = new Map(wordsData.map(item => [item.english.toLowerCase().trim(), item]));
+    const vocab = this.getUserVocabulary();
+    let changed = false;
+
+    for (const item of vocab) {
+      const enriched = enrichedByWord.get(item.word.toLowerCase().trim());
+      if (!enriched) continue;
+
+      if (enriched.disambiguationHint && enriched.disambiguationHint !== item.disambiguationHint) {
+        item.disambiguationHint = enriched.disambiguationHint;
+        changed = true;
+      }
+      if (enriched.partOfSpeech && enriched.partOfSpeech !== item.partOfSpeech) {
+        item.partOfSpeech = enriched.partOfSpeech;
+        changed = true;
+      }
+    }
+
+    if (changed) this.saveUserVocabulary(vocab);
   },
 
   recordTestResult(word: string, isCorrect: boolean): void {

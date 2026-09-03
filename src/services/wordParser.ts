@@ -174,6 +174,7 @@ export function parseVocabularyInput(input: string): ParsedInputResult {
           distractors: smartDistractors,
           acceptableRussian,
           acceptableEnglish: [english.toLowerCase().trim()],
+          contextSource: fullDescription !== baseWord ? 'provided' : 'fallback',
           level,
           timestamp: Date.now(),
         });

@@ -78,6 +78,11 @@ export function buildTestQuestions(
         acceptableAnswers: acceptableRussian.length > 0 ? acceptableRussian : [item.russian],
       });
     } else if (mode === 'mode2_ru_to_en') {
+      const acceptableEnglish = Array.from(new Set([
+        item.english.toLowerCase().trim(),
+        ...(item.acceptableEnglish || []).map(answer => answer.toLowerCase().trim()),
+      ])).filter(Boolean);
+
       questions.push({
         id: `q_${item.english}_${Math.random().toString(36).substring(2, 8)}`,
         originalWord: item.english,
@@ -85,10 +90,7 @@ export function buildTestQuestions(
         disambiguationHint: item.disambiguationHint,
         mode,
         correctAnswer: item.english,
-        acceptableAnswers: [
-          item.english.toLowerCase().trim(),
-          ...(item.acceptableEnglish || []).map(a => a.toLowerCase().trim()),
-        ],
+        acceptableAnswers: acceptableEnglish,
       });
     } else if (mode === 'mode3_en_to_ru') {
       questions.push({

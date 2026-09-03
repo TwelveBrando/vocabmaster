@@ -259,7 +259,7 @@ export function App() {
   };
 
   // START TEST DIRECTLY FROM PERSONAL VOCABULARY BANK
-  const startVocabularyBankTest = (
+  const startVocabularyBankTest = async (
     level: CEFRLevel | 'all' = sessionState.bankLevel || 'all',
     count: number = sessionState.bankWordCount || 15,
     mode: TestMode = sessionState.mode,
@@ -270,10 +270,36 @@ export function App() {
     if (words.length === 0) return;
 
     setTestSourceType('vocab_bank');
-    setCurrentWordsData(words);
-    const questions = buildTestQuestions(words, mode, numOptions);
-    setTestQuestions(questions);
-    setAppState('testing');
+    const hasApiKey = settings.apiKey && settings.apiKey.trim() !== '';
+
+    if (!hasApiKey) {
+      setCurrentWordsData(words);
+      setTestQuestions(buildTestQuestions(words, mode, numOptions));
+      setAppState('testing');
+      return;
+    }
+
+    setAppState('preparing');
+    setPrepErrors([]);
+    setPrepProgress({ processed: 0, total: words.length, message: 'ИИ создаёт контекст для слов...' });
+
+    try {
+      const { data, errors } = await AIService.fetchWordsData(
+        words,
+        settings,
+        (processed, total, message) => setPrepProgress({ processed, total, message }),
+      );
+
+      vocabularyService.applyAIEnrichment(data);
+      refreshCounts();
+      setCurrentWordsData(data);
+      if (errors.length > 0) setPrepErrors(errors);
+      setTestQuestions(buildTestQuestions(data, mode, numOptions));
+      setTimeout(() => setAppState('testing'), 300);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setPrepErrors([`Не удалось подготовить слова: ${errorMsg}`]);
+    }
   };
 
   const handleFinishTest = (results: QuestionResult[]) => {

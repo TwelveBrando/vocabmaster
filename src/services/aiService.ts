@@ -4,8 +4,33 @@ import { KNOWN_RUSSIAN_SYNONYMS, expandRussianGrammarVariants } from './synonymH
 import { generateAcceptableRussianVariants } from './wordParser';
 import { getSmartFallbackDistractors } from './distractorPool';
 
+const AI_CONTEXT_VERSION = 1;
+
+interface AIWordRequest {
+  english: string;
+  userRussian?: string;
+  userContext?: string;
+}
+
+const normalizeContextPart = (value?: string): string => (value || '')
+  .toLowerCase()
+  .replace(/[ё]/g, 'е')
+  .replace(/[^a-zа-я0-9]+/gi, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+/** Old cache/import entries often contain only the translation in this field. */
+export function hasUsefulDisambiguationContext(item: Pick<CachedWordData, 'russian' | 'disambiguationHint'>): boolean {
+  const russian = normalizeContextPart(item.russian);
+  const hint = normalizeContextPart(item.disambiguationHint);
+  if (!hint || hint === russian) return false;
+
+  const extraWords = hint.split(' ').filter(word => word && !russian.split(' ').includes(word));
+  return extraWords.length > 0;
+}
+
 export class AIService {
-  private static buildPrompt(words: { english: string; userRussian?: string }[]): string {
+  private static buildPrompt(words: AIWordRequest[]): string {
     return `You are a professional lexicographer and vocabulary testing engine for an English-Russian vocabulary trainer app.
 Analyze the following English words/phrases${words.some(w => w.userRussian) ? ' and their provided user translations' : ''}:
 ${JSON.stringify(words, null, 2)}
@@ -13,7 +38,11 @@ ${JSON.stringify(words, null, 2)}
 For EVERY word in the list, return a JSON object with:
 1. "english": the exact English word/phrase.
 2. "russian": the primary natural Russian translation (keep user's translation if provided).
-3. "disambiguationHint": A clear, disambiguating contextual mini-description in Russian so the user does not confuse it with words having different nuances. Format examples:
+3. "disambiguationHint": A clear, disambiguating contextual mini-description in Russian so the user can identify the EXACT English target from the Russian prompt.
+   THIS FIELD IS REQUIRED FOR EVERY ITEM. It MUST add usage/situation/object/contrast information and MUST NOT be merely the Russian translation repeated.
+   If a user translation is provided, preserve it in "russian", but independently create or improve the contextual hint. Use "userContext" only as useful guidance; do not simply copy it.
+   Explicitly distinguish close English words when ambiguity is likely. For example, "stairs" must be distinguished from "ladder": "лестница (ступени между этажами; не переносная лестница ladder)".
+   Format examples:
    - "поднимать (руку/цену)"
    - "через (сквозь: например, сквозь стену/лес)"
    - "рецепт (медицинский: назначение врача на лекарство)"
@@ -26,7 +55,7 @@ For EVERY word in the list, return a JSON object with:
    - Distractors MUST NOT be correct translations for this word.
    - Distractors MUST NEVER be copied from other words in this user list. They must be newly generated and specifically tailored for testing this word.
 5. "acceptableRussian": A COMPREHENSIVE array of ALL true, accurate, and interchangeable Russian synonyms and grammatical variants (e.g. for verbs include both perfective & imperfective aspects: ["извиняться", "извиниться", "просить прощения", "попросить прощения"]; for adverbs/prepositions include valid forms: ["за границей", "за рубежом", "за границу", "за рубеж"]; for nouns include direct synonyms: ["подросток", "тинейджер"]).
-6. "acceptableEnglish": An array of valid alternative English spellings or exact equivalent phrases (e.g. ["apologize", "apologise"], ["look forward to", "anticipate"]).
+6. "acceptableEnglish": An array containing the exact target and spelling variants of that SAME lexical item only (e.g. ["apologize", "apologise"]). NEVER include semantic synonyms or nearby words. For "stairs", "ladder" and "steps" are not acceptable answers.
 
 Return ONLY a valid JSON object with the following schema:
 {
@@ -90,12 +119,16 @@ Return ONLY a valid JSON object with the following schema:
       results.push({
         english: englishWord,
         russian: baseRussian,
-        disambiguationHint: item.disambiguationHint || baseRussian,
+        disambiguationHint: typeof item.disambiguationHint === 'string'
+          ? item.disambiguationHint.trim() || baseRussian
+          : baseRussian,
         distractors: distractors.slice(0, 6),
         acceptableRussian: Array.from(mergedAcceptable).filter(Boolean),
-        acceptableEnglish: Array.isArray(item.acceptableEnglish) && item.acceptableEnglish.length > 0
-          ? item.acceptableEnglish.map((e: string) => e.trim().toLowerCase())
-          : [englishWord.toLowerCase()],
+        // A Russian-to-English test checks recall of the selected vocabulary item,
+        // not any broadly synonymous word (stairs !== ladder).
+        acceptableEnglish: [englishWord.toLowerCase()],
+        contextSource: 'ai',
+        contextVersion: AI_CONTEXT_VERSION,
         timestamp: Date.now(),
       });
     }
@@ -104,7 +137,7 @@ Return ONLY a valid JSON object with the following schema:
   }
 
   private static async queryGemini(
-    words: { english: string; userRussian?: string }[],
+    words: AIWordRequest[],
     settings: AISettings
   ): Promise<CachedWordData[]> {
     const apiKey = settings.apiKey;
@@ -197,7 +230,7 @@ Return ONLY a valid JSON object with the following schema:
   }
 
   private static async queryGroqOrOpenAI(
-    words: { english: string; userRussian?: string }[],
+    words: AIWordRequest[],
     settings: AISettings,
     endpoint: string,
     defaultModel: string
@@ -239,9 +272,14 @@ Return ONLY a valid JSON object with the following schema:
   ): Promise<{ data: CachedWordData[]; errors: string[] }> {
     const normalizedInput = wordsInput.map(item => {
       if (typeof item === 'string') {
-        return { english: item.trim(), userRussian: undefined, initialData: undefined };
+        return { english: item.trim(), userRussian: undefined, userContext: undefined, initialData: undefined };
       }
-      return { english: item.english.trim(), userRussian: item.disambiguationHint || item.russian, initialData: item };
+      return {
+        english: item.english.trim(),
+        userRussian: item.russian,
+        userContext: hasUsefulDisambiguationContext(item) ? item.disambiguationHint : undefined,
+        initialData: item,
+      };
     }).filter(w => w.english.length > 0);
 
     const total = normalizedInput.length;
@@ -249,7 +287,7 @@ Return ONLY a valid JSON object with the following schema:
     const errors: string[] = [];
 
     // 1. Check local cache
-    const missing: { english: string; userRussian?: string; initialData?: CachedWordData }[] = [];
+    const missing: (AIWordRequest & { initialData?: CachedWordData })[] = [];
 
     for (const item of normalizedInput) {
       const cached = cacheService.getWord(item.english);
@@ -259,11 +297,12 @@ Return ONLY a valid JSON object with the following schema:
         Array.isArray(cached.acceptableRussian) &&
         cached.acceptableRussian.length > 0 &&
         Array.isArray(cached.distractors) &&
-        cached.distractors.length >= 4
+        cached.distractors.length >= 4 &&
+        hasUsefulDisambiguationContext(cached) &&
+        cached.contextSource === 'ai' &&
+        cached.contextVersion === AI_CONTEXT_VERSION &&
+        (!item.userRussian || normalizeContextPart(item.userRussian) === normalizeContextPart(cached.russian))
       ) {
-        if (item.userRussian && item.userRussian !== cached.russian) {
-          cached.disambiguationHint = item.userRussian;
-        }
         results.push(cached);
       } else if (item.initialData && (!settings.apiKey || settings.apiKey.trim() === '')) {
         // If no API key, enrich with smart fallback distractors
@@ -363,10 +402,19 @@ Return ONLY a valid JSON object with the following schema:
         for (const res of batchResults) {
           const original = batch.find(b => b.english.toLowerCase() === res.english.toLowerCase());
           if (original?.userRussian) {
-            res.disambiguationHint = original.userRussian;
+            res.russian = original.userRussian;
             // Add user's custom words to acceptable synonyms
             const userVariants = generateAcceptableRussianVariants(original.userRussian, res.english);
             res.acceptableRussian = Array.from(new Set([...(res.acceptableRussian || []), ...userVariants]));
+          }
+          res.acceptableEnglish = [res.english.toLowerCase().trim()];
+
+          // A malformed model response should not erase a useful context supplied
+          // by the user, but it must never replace generated context with a bare translation.
+          if (!hasUsefulDisambiguationContext(res) && original?.userContext) {
+            res.disambiguationHint = original.userContext;
+            res.contextSource = 'provided';
+            res.contextVersion = undefined;
           }
         }
 

@@ -42,6 +42,8 @@ export interface CachedWordData {
   distractors: string[];
   acceptableRussian?: string[];
   acceptableEnglish?: string[];
+  contextSource?: 'ai' | 'provided' | 'fallback';
+  contextVersion?: number;
   level?: CEFRLevel;
   partOfSpeech?: string;
   timestamp: number;

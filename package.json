@@ -9,6 +9,7 @@
     "dev:electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "dev": "concurrently -k -n \"VITE,ELECTRON\" -c \"blue,green\" \"npm run dev:vite\" \"npm run dev:electron\"",
     "build": "tsc -b && vite build",
+    "test:context": "node scripts/run-context-tests.mjs",
     "test:grammar": "node scripts/run-grammar-tests.mjs",
     "start": "electron .",
     "preview": "vite preview"

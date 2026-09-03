@@ -89,3 +89,6 @@ The grammar exercise feature is intentionally disabled. Do not re-enable `Gramma
 - Completed test results are saved in `test_attempts`/`test_answers`.
 - Profile shows the latest 20 test attempts through `GET /api/test-history`.
 - AI provider keys intentionally stay in the user's browser; do not persist them to shared DB.
+- When an AI key is configured, tests from the personal vocabulary bank now pass selected words through `AIService.fetchWordsData` before starting. This also enriches user-imported words with a Russian `disambiguationHint` and saves it back to local/cloud vocabulary.
+- AI-generated context is marked with `contextSource: "ai"` and `contextVersion`. Old cache entries or bare translations such as `stairs — лестница` are regenerated once; useful current AI context is reused.
+- Russian-to-English tests accept the selected English vocabulary item, not broad semantic synonyms: for a `stairs` question, `ladder` is intentionally incorrect. Context behavior has regression coverage in `npm run test:context`.
