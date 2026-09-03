@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Trash2, Key, Cpu, Palette, Settings2, Sliders, CheckCircle2, Eye, EyeOff, Check, AlertCircle, Languages } from 'lucide-react';
 import type { AISettings, UITheme, AIProvider } from '../types';
 import { cacheService } from '../services/cacheService';
@@ -28,14 +28,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showYandexKey, setShowYandexKey] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [cacheClearMsg, setCacheClearMsg] = useState('');
+  const apiKeyInputRef = useRef<HTMLInputElement>(null);
+  const yandexKeyInputRef = useRef<HTMLInputElement>(null);
+  const apiKeyInteractedRef = useRef(false);
+  const yandexKeyInteractedRef = useRef(false);
+  const expectedApiKeyRef = useRef(formData.apiKey);
+  const expectedYandexKeyRef = useRef(formData.yandexApiKey || '');
+
+  useEffect(() => {
+    expectedApiKeyRef.current = formData.apiKey;
+    expectedYandexKeyRef.current = formData.yandexApiKey || '';
+  }, [formData.apiKey, formData.yandexApiKey]);
 
   // Sync state whenever modal opens or settings update
   useEffect(() => {
     if (isOpen) {
+      apiKeyInteractedRef.current = false;
+      yandexKeyInteractedRef.current = false;
       const freshSettings = settingsService.getSettings();
       setFormData(freshSettings);
     }
   }, [isOpen, settings]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const restoreSavedKeys = () => {
+      if (!apiKeyInteractedRef.current && apiKeyInputRef.current) {
+        apiKeyInputRef.current.value = expectedApiKeyRef.current;
+      }
+      if (!yandexKeyInteractedRef.current && yandexKeyInputRef.current) {
+        yandexKeyInputRef.current.value = expectedYandexKeyRef.current;
+      }
+    };
+    const timers = [0, 250, 1000].map(delay => window.setTimeout(restoreSavedKeys, delay));
+    return () => timers.forEach(timer => window.clearTimeout(timer));
+  }, [isOpen, formData.provider]);
 
   if (!isOpen) return null;
 
@@ -49,6 +77,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const handleProviderChange = (newProvider: AIProvider) => {
+    apiKeyInteractedRef.current = false;
     // 1. Sync current key
     const currentKeys = {
       ...(formData.apiKeys || {}),
@@ -303,10 +332,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div className="relative mt-1">
                 <input
-                  type={showKey ? 'text' : 'password'}
+                  ref={apiKeyInputRef}
+                  type="text"
+                  name={`vocabmaster-${formData.provider}-api-token`}
+                  autoComplete="one-time-code"
+                  data-form-type="other"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={formData.apiKey}
-                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                  onPointerDown={() => { apiKeyInteractedRef.current = true; }}
+                  onKeyDown={() => { apiKeyInteractedRef.current = true; }}
+                  onPaste={() => { apiKeyInteractedRef.current = true; }}
+                  onChange={(e) => {
+                    if (!apiKeyInteractedRef.current) {
+                      e.currentTarget.value = expectedApiKeyRef.current;
+                      return;
+                    }
+                    handleApiKeyChange(e.target.value);
+                  }}
                   placeholder={providersList.find(p => p.id === formData.provider)?.placeholder || 'Введите ваш API ключ...'}
+                  style={{ WebkitTextSecurity: showKey ? 'none' : 'disc' } as React.CSSProperties}
                   className={`w-full pl-4 pr-12 py-3.5 rounded-xl ${currentThemeConfig.inputBg} ${currentThemeConfig.cardBorder} ${currentThemeConfig.inputText} ${currentThemeConfig.inputPlaceholder} text-sm focus:outline-none ${currentThemeConfig.inputFocus} transition-all shadow-inner font-mono`}
                 />
 
@@ -424,6 +472,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex items-center gap-2 mt-1">
                 <input
                   type="text"
+                  name="vocabmaster-model-id"
+                  autoComplete="off"
+                  data-form-type="other"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
                   value={formData.model}
                   onChange={(e) => handleModelChange(e.target.value)}
                   placeholder="Или введите своё имя модели..."
@@ -438,6 +492,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </label>
                   <input
                     type="text"
+                    name="vocabmaster-provider-base-url"
+                    autoComplete="off"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
+                    data-bwignore="true"
                     value={formData.baseUrl || 'http://localhost:11434/v1'}
                     onChange={(e) => handleBaseUrlChange(e.target.value)}
                     placeholder="http://localhost:11434/v1"
@@ -484,10 +544,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div className="relative mt-1">
                 <input
-                  type={showYandexKey ? 'text' : 'password'}
+                  ref={yandexKeyInputRef}
+                  type="text"
+                  name="vocabmaster-yandex-api-token"
+                  autoComplete="one-time-code"
+                  data-form-type="other"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-bwignore="true"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={formData.yandexApiKey || ''}
-                  onChange={(e) => handleYandexApiKeyChange(e.target.value)}
+                  onPointerDown={() => { yandexKeyInteractedRef.current = true; }}
+                  onKeyDown={() => { yandexKeyInteractedRef.current = true; }}
+                  onPaste={() => { yandexKeyInteractedRef.current = true; }}
+                  onChange={(e) => {
+                    if (!yandexKeyInteractedRef.current) {
+                      e.currentTarget.value = expectedYandexKeyRef.current;
+                      return;
+                    }
+                    handleYandexApiKeyChange(e.target.value);
+                  }}
                   placeholder="dict.1.1.2024..."
+                  style={{ WebkitTextSecurity: showYandexKey ? 'none' : 'disc' } as React.CSSProperties}
                   className={`w-full pl-4 pr-12 py-3 rounded-xl ${currentThemeConfig.inputBg} ${currentThemeConfig.cardBorder} ${currentThemeConfig.inputText} ${currentThemeConfig.inputPlaceholder} text-sm focus:outline-none ${currentThemeConfig.inputFocus} transition-all shadow-inner font-mono`}
                 />
 

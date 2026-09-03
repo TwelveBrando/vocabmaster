@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History, Download, Eraser } from 'lucide-react';
 import type { CEFRLevel, DictionaryEntry, UITheme, AISettings } from '../types';
 import { vocabularyService } from '../services/vocabularyService';
@@ -39,6 +39,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [preparedWords, setPreparedWords] = useState(() => vocabularyService.getPreparedVocabularyCount());
   const [downloadProgress, setDownloadProgress] = useState<{ processed: number; total: number } | null>(null);
   const [downloadError, setDownloadError] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchInteractedRef = useRef(false);
 
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
 
@@ -87,6 +89,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     if (!cloudSyncService.isLoggedIn()) return;
     setIsHistoryLoading(true);
     cloudSyncService.loadHistory().then(setHistory).catch(() => {}).finally(() => setIsHistoryLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const clearUnexpectedAutofill = () => {
+      if (searchInteractedRef.current || !searchInputRef.current) return;
+      searchInputRef.current.value = '';
+      setSearchQuery('');
+    };
+    const timers = [0, 250, 1000].map(delay => window.setTimeout(clearUnexpectedAutofill, delay));
+    return () => timers.forEach(timer => window.clearTimeout(timer));
   }, []);
 
   const handleToggleWord = async (entry: DictionaryEntry) => {
@@ -329,11 +341,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <Search className={`w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 ${theme.textMuted}`} />
             )}
             <input
-              type="text"
-              name="vocabulary-search"
+              ref={searchInputRef}
+              type="search"
+              name="vocabmaster-dictionary-query"
               autoComplete="off"
+              data-form-type="other"
+              data-1p-ignore="true"
+              data-lpignore="true"
+              data-bwignore="true"
+              autoCapitalize="none"
+              spellCheck={false}
               value={searchQuery}
+              onPointerDown={() => { searchInteractedRef.current = true; }}
+              onKeyDown={() => { searchInteractedRef.current = true; }}
+              onPaste={() => { searchInteractedRef.current = true; }}
               onChange={(e) => {
+                if (!searchInteractedRef.current) {
+                  e.currentTarget.value = searchQuery;
+                  return;
+                }
                 setSearchQuery(e.target.value);
                 if (selectedLetter) setSelectedLetter('');
               }}
