@@ -139,7 +139,7 @@ export function App() {
   useEffect(() => {
     const wrapper = scrollWrapperRef.current;
     const content = scrollContentRef.current;
-    if (!wrapper || !content || performanceProfile.prefersReducedMotion) return;
+    if (!wrapper || !content || performanceProfile.prefersReducedMotion || performanceProfile.lightweightRendering) return;
 
     const lenis = new Lenis({
       wrapper,
@@ -162,7 +162,7 @@ export function App() {
       window.cancelAnimationFrame(animationFrame);
       lenis.destroy();
     };
-  }, [isWelcomeScreenOpen, performanceProfile.prefersReducedMotion]);
+  }, [isWelcomeScreenOpen, performanceProfile.prefersReducedMotion, performanceProfile.lightweightRendering]);
 
   const handleSaveSettings = (newSettings: AISettings) => {
     setSettings(newSettings);
@@ -413,6 +413,7 @@ export function App() {
         shaderMaxPixelCount={performanceProfile.shaderMaxPixelCount}
         shaderMinPixelRatio={performanceProfile.shaderMinPixelRatio}
         prefersReducedMotion={performanceProfile.prefersReducedMotion}
+        lightweightRendering={performanceProfile.lightweightRendering}
       />
     );
   }
@@ -425,7 +426,7 @@ export function App() {
             {...liquidMetalPresets[2].params}
             colorBack="#080808"
             colorTint="#e7e7e4"
-            speed={performanceProfile.prefersReducedMotion ? 0 : 0.35}
+            speed={performanceProfile.prefersReducedMotion ? 0 : performanceProfile.lightweightRendering ? 0.18 : 0.35}
             minPixelRatio={performanceProfile.shaderMinPixelRatio}
             maxPixelCount={performanceProfile.shaderMaxPixelCount}
             className="liquid-metal-backdrop"

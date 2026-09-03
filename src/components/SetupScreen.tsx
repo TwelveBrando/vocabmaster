@@ -270,7 +270,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   <div className={`text-base font-bold ${theme.textPrimary}`}>Количество слов в тесте</div>
                   <div className={`text-xs ${theme.textSecondary}`}>Сколько случайных слов отобрать из выбранного уровня</div>
                 </div>
-                <div className={`flex items-center gap-1.5 p-1.5 rounded-xl border shadow-xs ${
+                <div className={`flex w-full items-center gap-1.5 overflow-x-auto p-1.5 sm:w-auto rounded-xl border shadow-xs ${
                   theme.isLight ? 'bg-slate-200/80 border-slate-300' : 'bg-black/30 border-white/10'
                 }`}>
                   {[5, 10, 15, 25, 50, 0].map((num) => {
@@ -281,7 +281,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                         key={num}
                         type="button"
                         onClick={() => setBankWordCount(isAll ? 9999 : num)}
-                        className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                        className={`shrink-0 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
                           isSelected
                             ? `${theme.primaryButton} shadow-xs`
                             : theme.isLight
@@ -385,7 +385,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   ? 'bg-slate-100 text-slate-800 border-slate-300 shadow-2xs'
                   : 'bg-white/[0.06] text-slate-300 border-white/10'
               }`}>
-                Формат 1 • Клавиша 1
+                Формат 1<span className="hidden sm:inline"> • Клавиша 1</span>
               </span>
               {selectedMode === 'mode1_choice' && (
                 <CheckCircle2 className={`w-5 h-5 ${theme.accentText}`} />
@@ -394,7 +394,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             <div>
               <h3 className={`text-lg font-black mb-1.5 ${theme.textPrimary}`}>Выбор из вариантов</h3>
               <p className={`text-sm leading-relaxed ${theme.textSecondary}`}>
-                Выбор перевода из предложенных вариантов ответа. Мгновенный выбор клавишами 1–7.
+                Выберите подходящий перевод из предложенных вариантов ответа.
               </p>
             </div>
           </button>
@@ -419,7 +419,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   ? 'bg-slate-100 text-slate-800 border-slate-300 shadow-2xs'
                   : 'bg-white/[0.06] text-slate-300 border-white/10'
               }`}>
-                Формат 2 • Клавиша 2
+                Формат 2<span className="hidden sm:inline"> • Клавиша 2</span>
               </span>
               {selectedMode === 'mode2_ru_to_en' && (
                 <CheckCircle2 className={`w-5 h-5 ${theme.accentText}`} />
@@ -453,7 +453,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                   ? 'bg-slate-100 text-slate-800 border-slate-300 shadow-2xs'
                   : 'bg-white/[0.06] text-slate-300 border-white/10'
               }`}>
-                Формат 3 • Клавиша 3
+                Формат 3<span className="hidden sm:inline"> • Клавиша 3</span>
               </span>
               {selectedMode === 'mode3_en_to_ru' && (
                 <CheckCircle2 className={`w-5 h-5 ${theme.accentText}`} />
@@ -476,7 +476,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
             <div className={`text-base font-bold ${theme.textPrimary}`}>Количество вариантов ответа</div>
             <div className={`text-xs sm:text-sm ${theme.textSecondary}`}>Сколько вариантов перевода предлагать для каждого вопроса (от 2 до 7).</div>
           </div>
-          <div className={`flex items-center gap-1.5 p-1.5 rounded-xl border shadow-xs ${
+          <div className={`grid w-full grid-cols-6 gap-1 p-1.5 sm:flex sm:w-auto sm:items-center sm:gap-1.5 rounded-xl border shadow-xs ${
             theme.isLight ? 'bg-slate-200/80 border-slate-300' : 'bg-black/30 border-white/10'
           }`}>
             {[2, 3, 4, 5, 6, 7].map((num) => (
@@ -484,7 +484,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
                 key={num}
                 type="button"
                 onClick={() => setNumOptions(num)}
-                className={`w-10 h-9 rounded-lg text-sm font-extrabold transition-all cursor-pointer ${
+                className={`h-9 min-w-0 w-full sm:w-10 rounded-lg text-sm font-extrabold transition-all cursor-pointer ${
                   numOptions === num
                     ? `${theme.primaryButton} shadow-xs`
                     : theme.isLight
@@ -501,7 +501,7 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 
       {/* Bottom Start Section */}
       <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className={`text-sm flex items-center gap-2.5 ${theme.textMuted}`}>
+        <div className={`hidden text-sm sm:flex items-center gap-2.5 ${theme.textMuted}`}>
           <span className={`px-2.5 py-1 rounded-lg border font-bold text-xs ${theme.kbdBg}`}>Ctrl + Enter</span>
           <span>быстрый старт теста</span>
         </div>

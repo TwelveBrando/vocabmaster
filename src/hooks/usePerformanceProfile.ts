@@ -33,7 +33,7 @@ export function usePerformanceProfile() {
     prefersReducedMotion,
     // The shader keeps the same CSS size and parameters. Only its internal
     // framebuffer is capped, avoiding multi-million-pixel redraws on HiDPI screens.
-    shaderMaxPixelCount: lightweightRendering ? 720 * 720 : 1920 * 1080,
-    shaderMinPixelRatio: lightweightRendering ? 0.75 : 1,
+    shaderMaxPixelCount: lightweightRendering ? 540 * 540 : 1920 * 1080,
+    shaderMinPixelRatio: lightweightRendering ? 0.65 : 1,
   };
 }

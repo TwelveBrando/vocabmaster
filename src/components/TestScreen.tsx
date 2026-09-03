@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, X, CheckCircle2, XCircle, CornerDownLeft, Sparkles, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { Check, X, CheckCircle2, XCircle, CornerDownLeft, Sparkles, Volume2, VolumeX, Loader2, ArrowRight } from 'lucide-react';
 import type { TestQuestion, QuestionResult, AISettings, UITheme } from '../types';
 import { sound } from '../utils/sound';
 import { THEMES } from '../styles/themes';
@@ -206,12 +206,12 @@ export const TestScreen: React.FC<TestScreenProps> = ({
   return (
     <div
       onClick={keepFocus}
-      className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col justify-between overflow-y-auto px-4 py-4 select-none animate-fadeIn sm:px-10 sm:py-6"
+      className="test-screen relative z-10 mx-auto flex h-full min-h-0 w-full max-w-5xl flex-1 flex-col justify-between overflow-y-auto px-3 py-3 select-none animate-fadeIn sm:px-10 sm:py-6"
     >
       {/* Top Header Bar inside Test */}
       <div>
-        <div className="flex items-center justify-between text-sm mb-3 font-medium">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 text-sm mb-3 font-medium">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <span className={`px-2.5 py-0.5 rounded-md border font-bold text-xs ${theme.accentBadge}`}>
               {currentIndex + 1} из {total}
             </span>
@@ -222,7 +222,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {isLoadingQuestions && loadingProgress && (
               <div className={`flex min-w-24 sm:min-w-40 flex-col gap-1 rounded-lg border px-2 sm:px-3 py-1.5 ${theme.kbdBg}`}>
                 <div className="flex items-center justify-between gap-3 text-[10px] font-bold">
@@ -243,7 +243,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                 e.stopPropagation();
                 setSoundActive(!soundActive);
               }}
-              className={`p-1.5 rounded-md transition-all cursor-pointer ${
+              className={`grid h-10 w-10 place-items-center rounded-md transition-all cursor-pointer sm:h-auto sm:w-auto sm:p-1.5 ${
                 theme.isLight ? 'hover:bg-slate-200 text-slate-600' : 'hover:bg-white/10 text-slate-400 hover:text-white'
               }`}
               title={soundActive ? 'Выключить звук' : 'Включить звук'}
@@ -256,13 +256,13 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                 e.stopPropagation();
                 onExit();
               }}
-              className={`px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer backdrop-blur-md active:scale-98 shadow-xs ${
+              className={`min-h-10 px-3 sm:px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer backdrop-blur-md active:scale-98 shadow-xs ${
                 theme.isLight
                   ? 'bg-white hover:bg-slate-100 border-slate-300 text-slate-900 shadow-2xs'
                   : 'bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-800'
               }`}
             >
-              Esc • Выйти
+              <span className="hidden sm:inline">Esc • </span>Выйти
             </button>
           </div>
         </div>
@@ -277,10 +277,10 @@ export const TestScreen: React.FC<TestScreenProps> = ({
       </div>
 
       {/* Center Word Card */}
-      <div className="my-auto flex flex-col items-center text-center w-full max-w-3xl mx-auto py-4">
+      <div className="my-auto flex w-full max-w-3xl flex-col items-center py-4 text-center sm:py-6">
         {/* Disambiguation Context Hint for Mode 2 */}
         {currentQuestion.mode === 'mode2_ru_to_en' && mode2ContextBadge && (
-          <div className={`mb-5 px-5 py-3 rounded-2xl ${theme.cardBg} ${theme.cardBorder} text-sm sm:text-base shadow-xl flex items-center gap-2.5 max-w-2xl animate-fadeIn`}>
+          <div className={`mb-4 px-4 py-3 sm:mb-5 sm:px-5 rounded-2xl ${theme.cardBg} ${theme.cardBorder} text-sm sm:text-base shadow-xl flex items-center gap-2.5 max-w-2xl animate-fadeIn`}>
             <Sparkles className={`w-5 h-5 ${theme.accentText} shrink-0`} />
             <span className={`font-medium text-left ${theme.textSecondary}`}>
               Контекст: <strong className={`font-bold ${theme.textPrimary}`}>{mode2ContextBadge}</strong>
@@ -289,8 +289,8 @@ export const TestScreen: React.FC<TestScreenProps> = ({
         )}
 
         {/* Main Prompt Word Display */}
-        <div className="relative mb-8">
-          <h1 className={`text-4xl sm:text-6xl font-extrabold tracking-tight drop-shadow-xs ${theme.textPrimary}`}>
+        <div className="relative mb-5 sm:mb-8">
+          <h1 className={`break-words text-3xl min-[380px]:text-4xl sm:text-6xl font-extrabold tracking-tight drop-shadow-xs ${theme.textPrimary}`}>
             {currentQuestion.mode === 'mode2_ru_to_en'
               ? mode2RussianMain
               : currentQuestion.originalWord}
@@ -299,7 +299,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
 
         {/* Mode 1: Multiple Choice Options */}
         {currentQuestion.mode === 'mode1_choice' && currentQuestion.options && (
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
+          <div className="mt-2 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3.5">
             {currentQuestion.options.map((opt, idx) => {
               const keyNumber = idx + 1;
               const isSelected = selectedOptionIndex === idx;
@@ -329,7 +329,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                   type="button"
                   disabled={isAnswered}
                   onClick={() => handleAnswerSubmit(opt, idx)}
-                  className={`p-4.5 sm:p-5 rounded-2xl transition-all flex items-center justify-between gap-3.5 cursor-pointer ${buttonStyle}`}
+                  className={`min-h-14 p-3.5 sm:p-5 rounded-2xl transition-all flex items-center justify-between gap-3 cursor-pointer text-left ${buttonStyle}`}
                 >
                   <div className="flex items-center gap-3.5">
                     <span className={`w-8 h-8 rounded-xl border text-xs font-bold flex items-center justify-center shrink-0 ${theme.kbdBg}`}>
@@ -356,6 +356,10 @@ export const TestScreen: React.FC<TestScreenProps> = ({
               <input
                 ref={inputRef}
                 type="text"
+                enterKeyHint="done"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={userInput}
                 disabled={isAnswered}
                 onChange={(e) => setUserInput(e.target.value)}
@@ -364,7 +368,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                     ? 'Введите слово на английском...'
                     : 'Введите перевод на русском...'
                 }
-                className={`w-full px-6 py-5 rounded-2xl text-xl sm:text-2xl text-center font-bold focus:outline-none transition-all leading-relaxed ${
+                className={`w-full px-4 py-4 sm:px-6 sm:py-5 rounded-2xl text-lg min-[380px]:text-xl sm:text-2xl text-center font-bold focus:outline-none transition-all leading-relaxed ${
                   !isAnswered
                     ? `${theme.inputBg} ${theme.cardBorder} ${theme.inputText} ${theme.inputPlaceholder} ${theme.inputFocus} shadow-inner`
                     : isCurrentCorrect
@@ -377,12 +381,26 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                 }`}
               />
               {!isAnswered && userInput && (
-                <div className={`absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border backdrop-blur-md ${theme.kbdBg}`}>
+                <div className={`absolute right-4 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border backdrop-blur-md ${theme.kbdBg}`}>
                   <CornerDownLeft className={`w-3.5 h-3.5 ${theme.accentText}`} />
                   <span>Enter</span>
                 </div>
               )}
             </div>
+            {!isAnswered && (
+              <button
+                type="button"
+                disabled={!userInput.trim()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleAnswerSubmit(userInput);
+                }}
+                className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold transition disabled:cursor-not-allowed disabled:opacity-40 sm:hidden ${theme.primaryButton}`}
+              >
+                Проверить ответ
+                <Check className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            )}
           </div>
         )}
 
@@ -399,7 +417,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                   <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 stroke-[2.5]" />
                   <span className="text-base font-black tracking-tight">Верно!</span>
                 </div>
-                <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border ${
+                <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border ${
                   theme.isLight
                     ? 'bg-slate-100 border-slate-200 text-slate-700'
                     : 'bg-white/10 border-white/10 text-slate-300'
@@ -419,7 +437,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
                     <XCircle className="w-5 h-5 text-rose-500 shrink-0 stroke-[2.5]" />
                     <span className="text-base font-black tracking-tight text-rose-600 dark:text-rose-400">Неверно</span>
                   </div>
-                  <div className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border ${
+                  <div className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border ${
                     theme.isLight
                       ? 'bg-slate-100 border-slate-200 text-slate-700'
                       : 'bg-white/10 border-white/10 text-slate-300'
@@ -441,6 +459,20 @@ export const TestScreen: React.FC<TestScreenProps> = ({
           </div>
         )}
 
+        {isAnswered && !waitingForQuestions && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              advanceToNext();
+            }}
+            className={`mt-3 flex min-h-12 w-full max-w-xl items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold shadow-lg transition sm:hidden ${theme.primaryButton}`}
+          >
+            {isLast && !isLoadingQuestions ? 'Завершить тест' : 'Следующее слово'}
+            <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        )}
+
         {waitingForQuestions && (
           <div className={`mt-4 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold ${theme.kbdBg}`}>
             <Loader2 className={`h-4 w-4 animate-spin ${theme.accentText}`} />
@@ -450,7 +482,7 @@ export const TestScreen: React.FC<TestScreenProps> = ({
       </div>
 
       {/* Bottom Keyboard Controls Hint Bar */}
-      <div className={`border-t pt-4.5 flex flex-wrap items-center justify-center gap-5 text-xs sm:text-sm ${
+      <div className={`hidden border-t pt-4.5 sm:flex flex-wrap items-center justify-center gap-5 text-xs sm:text-sm ${
         theme.isLight ? 'border-slate-200 text-slate-500' : 'border-white/10 text-slate-400'
       }`}>
         {currentQuestion.mode === 'mode1_choice' ? (

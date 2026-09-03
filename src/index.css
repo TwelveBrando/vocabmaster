@@ -83,6 +83,38 @@
   }
 }
 
+@media (max-width: 767px) {
+  :root {
+    --app-ui-scale: 1;
+    --app-viewport-height: 100dvh;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    touch-action: manipulation;
+  }
+
+  .settings-modal-panel,
+  .import-modal-panel {
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .test-screen {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .backdrop-blur-md,
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl,
+  .import-modal-backdrop,
+  .auth-backdrop {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
 /* `zoom` enlarges CSS viewport units too. Compensate every full-screen surface
    so its visual bottom remains exactly at the physical viewport boundary. */
 .liquid-metal-hero {
@@ -246,6 +278,17 @@
 .theme-prisma_noir .flow-button:active { transform: scale(.95) !important; }
 .theme-prisma_noir .flow-button { --flow-ink: #e1e0cc; --flow-fill: #e1e0cc; --flow-hover-ink: #0d0d0c; }
 
+@media (hover: hover) {
+  .theme-prisma_noir .flow-button.settings-save-button:hover {
+    border-radius: 100px !important;
+    transform: none !important;
+  }
+  .theme-prisma_noir .flow-button.settings-save-button:hover .flow-button__label {
+    letter-spacing: inherit;
+    transform: none;
+  }
+}
+
 /* Every primary action in Prisma gets the same growing-centre treatment,
    including actions rendered by existing screens rather than FlowButton. */
 .theme-prisma_noir .prisma-flow-surface {
@@ -267,6 +310,15 @@
   .theme-prisma_noir .prisma-flow-surface:hover::before { width: 180%; height: 500%; opacity: 1; }
 }
 .theme-prisma_noir .prisma-flow-surface:active { transform: scale(.95) !important; }
+
+@media (hover: none), (pointer: coarse) {
+  .theme-prisma_noir button:not(:disabled):hover,
+  .theme-language_explorer button:not(:disabled):hover,
+  .theme-prisma_noir .vocabmaster-scroll-content > div > div[class*="rounded-3xl"]:hover,
+  .theme-prisma_noir .vocabmaster-scroll-content > div > div[class*="rounded-2xl"]:hover {
+    transform: none !important;
+  }
+}
 @keyframes prismaDrift { from { transform: translate3d(-2%, -1%, 0) scale(1); } to { transform: translate3d(2%, 2%, 0) scale(1.05); } }
 @keyframes prismaReveal { from { opacity: 0; transform: translateY(28px); filter: blur(7px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
 

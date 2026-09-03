@@ -63,7 +63,7 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
   };
 
   return createPortal(
-    <div className="import-modal-layer fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+    <div className="import-modal-layer fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-6">
       {/* Backdrop */}
       <div
         onClick={onClose}
@@ -73,7 +73,7 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
       {/* Modal Surface */}
       <div role="dialog" aria-modal="true" aria-label="Импорт списка слов" className={`import-modal-panel relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border shadow-2xl ${theme.modalBg} ${theme.cardBorder}`}>
         {/* Header */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${theme.modalHeaderBg} ${theme.cardBorder}`}>
+        <div className={`flex items-center justify-between gap-3 px-4 py-3.5 sm:px-6 sm:py-4 border-b ${theme.modalHeaderBg} ${theme.cardBorder}`}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <UploadCloud className="w-4 h-4" />
@@ -82,7 +82,7 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
               <h3 className={`text-base font-bold tracking-tight ${theme.textPrimary}`}>
                 Импорт списка слов
               </h3>
-              <p className={`text-xs ${theme.textSecondary}`}>
+              <p className={`hidden text-xs sm:block ${theme.textSecondary}`}>
                 Вставьте список с переводом через тире или markdown
               </p>
             </div>
@@ -100,7 +100,7 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto flex flex-col gap-4 flex-1">
           {/* Quick Action Buttons */}
           <div className="flex items-center justify-between gap-3">
             <label className={`text-[11px] font-bold uppercase tracking-wider ${theme.textMuted}`}>
@@ -190,11 +190,11 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className={`px-6 py-3.5 border-t flex items-center justify-between gap-3 ${theme.modalFooterBg} ${theme.cardBorder}`}>
+        <div className={`px-4 sm:px-6 py-3.5 border-t flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 ${theme.modalFooterBg} ${theme.cardBorder}`}>
           <button
             type="button"
             onClick={onClose}
-            className={`px-4 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+            className={`min-h-11 px-4 py-2 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
               theme.isLight
                 ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
                 : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
@@ -207,7 +207,7 @@ export const ImportWordsModal: React.FC<ImportWordsModalProps> = ({
             type="button"
             disabled={count === 0}
             onClick={handleConfirmImport}
-            className={`px-5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-98 ${
+            className={`min-h-11 px-5 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-98 ${
               count === 0
                 ? 'opacity-40 cursor-not-allowed bg-slate-300 text-slate-500'
                 : `${theme.primaryButton}`

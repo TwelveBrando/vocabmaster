@@ -186,7 +186,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
 
         {/* Clean, spacious action buttons bar */}
-        <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3 shrink-0 flex-wrap">
+        <div className="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-2 sm:flex sm:w-auto sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={() => setIsImportModalOpen(true)}
@@ -207,7 +207,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             className={`h-11 flex-1 sm:flex-none px-3 sm:px-6 rounded-xl font-bold text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
             >
               <Play className="w-4 h-4 fill-current" />
-              <span>Тестировать мой словарь ({stats.totalWords})</span>
+              <span className="sm:hidden">Тестировать ({stats.totalWords})</span><span className="hidden sm:inline">Тестировать мой словарь ({stats.totalWords})</span>
             </button>
           )}
         </div>

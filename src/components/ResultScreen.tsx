@@ -196,7 +196,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Пройти заново</span>
-              <span className="opacity-80 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20">Enter</span>
+              <span className="hidden sm:inline-flex opacity-80 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20">Enter</span>
             </button>
 
             {mistakes.length > 0 && (
@@ -211,7 +211,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
               >
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
                 <span>Ошибки</span>
-                <span className="opacity-75 text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20">R</span>
+                <span className="hidden sm:inline-flex opacity-75 text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20">R</span>
               </button>
             )}
           </div>
@@ -349,7 +349,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>В меню</span>
-              <span className="opacity-60 text-[10px] font-mono px-1 py-0.5 rounded bg-slate-500/10">Esc</span>
+              <span className="hidden sm:inline-flex opacity-60 text-[10px] font-mono px-1 py-0.5 rounded bg-slate-500/10">Esc</span>
             </button>
           </div>
         </div>
