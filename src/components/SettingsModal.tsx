@@ -167,7 +167,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'gemini', label: 'Google Gemini', desc: 'Flash-Lite • Free tier', link: 'aistudio.google.com/app/apikey', placeholder: 'AIzaSy...' },
     { id: 'groq', label: 'Groq Cloud', desc: 'GPT-OSS • Free plan', link: 'console.groq.com', placeholder: 'gsk_...' },
     { id: 'openrouter', label: 'OpenRouter', desc: 'Любые модели', link: 'openrouter.ai/keys', placeholder: 'sk-or-...' },
-    { id: 'custom', label: 'Custom / Local', desc: 'Ollama / OpenAI', link: 'localhost:11434', placeholder: 'sk-...' },
+    { id: 'custom', label: 'Custom / Local', desc: 'Ollama / совместимый API', link: 'localhost:11434', placeholder: 'sk-...' },
   ];
 
   const hasCurrentKey = formData.apiKey && formData.apiKey.trim().length > 0;
@@ -194,10 +194,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             <div>
               <h3 className={`text-xl font-extrabold tracking-tight ${currentThemeConfig.textPrimary}`}>
-                Оформление & Настройки ИИ и Перевода
+                Оформление & Настройки генерации и перевода
               </h3>
               <p className={`text-xs sm:text-sm mt-0.5 ${currentThemeConfig.textSecondary}`}>
-                2 темы, ИИ-провайдеры, Яндекс.Словарь и параметры тестирования
+                2 темы, модели генерации, Яндекс.Словарь и параметры тестирования
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex items-center justify-between">
               <label className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 ${currentThemeConfig.textMuted}`}>
                 <Cpu className={`w-4 h-4 ${currentThemeConfig.accentText}`} />
-                ИИ-провайдеры & Генерация тестов (Gemini, Groq, OpenRouter)
+                Провайдеры & Генерация тестов (Gemini, Groq, OpenRouter)
               </label>
 
               <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   API-ключ для {formData.provider.toUpperCase()}{formData.provider === 'custom' ? ' (необязательно для локального сервера)' : ''}
                 </label>
                 <span className={`text-[11px] ${currentThemeConfig.textSecondary}`}>
-                  Получить ключ: <a href={`https://${providersList.find(p => p.id === formData.provider)?.link}`} target="_blank" rel="noreferrer" className="underline font-bold text-sky-500 hover:text-sky-400">{providersList.find(p => p.id === formData.provider)?.link}</a>
+                  Получить ключ: <a href={`https://${providersList.find(p => p.id === formData.provider)?.link}`} target="_blank" rel="noreferrer" className="underline font-bold text-sky-500 hover:text-sky-400">страница провайдера</a>
                 </span>
               </div>
 
@@ -366,11 +366,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     openrouter: [
                       { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash (Free)', tag: 'Free', desc: 'Бесплатный доступ к Gemini' },
                       { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'LLaMA 3.3 70B (Free)', tag: 'Free', desc: 'Мощная открытая модель' },
-                      { id: 'liquid/lfm-7b:free', name: 'LiquidAI LFM 7B (Free)', tag: 'Free', desc: 'Быстрый отклик' },
+                      { id: 'liquid/lfm-7b:free', name: 'Liquid LFM 7B (Free)', tag: 'Free', desc: 'Быстрый отклик' },
                     ],
                     custom: [
-                      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', tag: 'OpenAI', desc: 'Быстрая и умная модель' },
-                      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', tag: 'OpenAI', desc: 'Классическая модель' },
+                      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', tag: 'Совместимая', desc: 'Быстрая и умная модель' },
+                      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', tag: 'Совместимая', desc: 'Классическая модель' },
                     ],
                   };
 
@@ -434,7 +434,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {formData.provider === 'custom' && (
                 <div className="flex flex-col gap-2 mt-2">
                   <label className={`text-[11px] font-black uppercase tracking-wider ${currentThemeConfig.textMuted}`}>
-                    OpenAI-совместимый Base URL
+                    Совместимый Base URL
                   </label>
                   <input
                     type="text"

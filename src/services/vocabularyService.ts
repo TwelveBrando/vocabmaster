@@ -242,6 +242,25 @@ export const vocabularyService = {
     return this.getUserVocabulary().filter(item => cacheService.isAIContextReady(item.word)).length;
   },
 
+  clearPreparedVocabularyContexts(): number {
+    const vocab = this.getUserVocabulary();
+    let cleared = 0;
+
+    for (const item of vocab) {
+      const cached = cacheService.getWord(item.word);
+      if (!cached || cached.contextSource !== 'ai') continue;
+
+      if (item.disambiguationHint === cached.disambiguationHint) {
+        item.disambiguationHint = item.russian;
+      }
+      cacheService.removeWord(item.word);
+      cleared += 1;
+    }
+
+    if (cleared > 0) this.saveUserVocabulary(vocab);
+    return cleared;
+  },
+
   getTestWordsFromVocabulary(level?: CEFRLevel | 'all', count?: number): CachedWordData[] {
     const vocab = this.getUserVocabulary();
     if (vocab.length === 0) return [];

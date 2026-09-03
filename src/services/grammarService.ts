@@ -357,7 +357,7 @@ export class GrammarService {
     if (!apiKey && !localCustomEndpoint) {
       throw new Error(
         provider === 'gemini'
-          ? 'Нужен бесплатный Gemini API-ключ. Откройте настройки и вставьте ключ из Google AI Studio.'
+          ? 'Нужен бесплатный Gemini API-ключ. Откройте настройки и вставьте ключ из сервиса Google.'
           : `Для генерации нужен API-ключ провайдера ${provider}. Добавьте его в настройках.`,
       );
     }
@@ -394,7 +394,7 @@ export class GrammarService {
           if (attempt === 1) throw error;
         }
       }
-      throw new Error('ИИ не смог создать достаточно разнообразный набор упражнений.');
+      throw new Error('Не удалось создать достаточно разнообразный набор упражнений.');
     } catch (error) {
       if (options.signal?.aborted) throw new DOMException('Generation cancelled', 'AbortError');
       if (signal.aborted) {
@@ -589,9 +589,9 @@ Return only the JSON object required by the provided response schema.`;
     try {
       value = JSON.parse(clean);
     } catch {
-      throw new Error('ИИ вернул повреждённый JSON. Повторите генерацию.');
+      throw new Error('Модель вернула повреждённый JSON. Повторите генерацию.');
     }
-    if (!value || typeof value !== 'object') throw new Error('ИИ вернул неверный формат упражнений.');
+    if (!value || typeof value !== 'object') throw new Error('Модель вернула неверный формат упражнений.');
 
     const candidate = value as Partial<ExerciseSets>;
     const groups: { key: keyof ExerciseSets; type: GrammarExercise['type'] }[] = [
@@ -608,7 +608,7 @@ Return only the JSON object required by the provided response schema.`;
     for (const group of groups) {
       const items = candidate[group.key];
       if (!Array.isArray(items) || items.length !== 5) {
-        throw new Error(`ИИ должен вернуть ровно 5 заданий в разделе ${group.key}.`);
+        throw new Error(`Модель должна вернуть ровно 5 заданий в разделе ${group.key}.`);
       }
 
       result[group.key] = items.map((rawItem, index) => {
@@ -616,25 +616,25 @@ Return only the JSON object required by the provided response schema.`;
         const item = rawItem as GrammarExercise;
         const requiredStrings = [item.question, item.correctAnswer, item.explanation, item.hint];
         if (requiredStrings.some((field) => typeof field !== 'string' || !field.trim())) {
-          throw new Error('ИИ пропустил обязательный текст в одном из заданий.');
+          throw new Error('Модель пропустила обязательный текст в одном из заданий.');
         }
         const normalizedQuestion = normalizeComparable(item.question);
-        if (allQuestions.has(normalizedQuestion)) throw new Error('ИИ повторил одно и то же предложение в наборе.');
+        if (allQuestions.has(normalizedQuestion)) throw new Error('В наборе повторилось одно и то же предложение.');
         for (const previousQuestion of allQuestions) {
           if (lexicalSimilarity(normalizedQuestion, previousQuestion) >= 0.72) {
-            throw new Error('ИИ создал слишком похожие предложения внутри набора. Повторите генерацию.');
+            throw new Error('В наборе слишком похожие предложения. Повторите генерацию.');
           }
         }
         if (recentHistory.some((previousQuestion) => (
           normalizeComparable(previousQuestion) === normalizedQuestion
           || lexicalSimilarity(normalizedQuestion, previousQuestion) >= 0.82
         ))) {
-          throw new Error('ИИ повторил недавний сюжет или лексику. Повторите генерацию.');
+          throw new Error('Генератор повторил недавний сюжет или лексику. Повторите генерацию.');
         }
         for (const token of contentTokens(normalizedQuestion)) {
           const previousQuestion = usedContentWords.get(token);
           if (previousQuestion) {
-            throw new Error(`ИИ повторил ключевое слово «${token}» в нескольких заданиях. Повторите генерацию.`);
+            throw new Error(`Генератор повторил ключевое слово «${token}» в нескольких заданиях. Повторите генерацию.`);
           }
           usedContentWords.set(token, normalizedQuestion);
         }
@@ -645,7 +645,7 @@ Return only the JSON object required by the provided response schema.`;
             throw new Error('В задании с выбором должно быть ровно 4 варианта.');
           }
           const uniqueOptions = new Set(item.options.map(normalizeGrammarAnswer));
-          if (uniqueOptions.size !== 4) throw new Error('ИИ повторил варианты ответа.');
+          if (uniqueOptions.size !== 4) throw new Error('Генератор повторил варианты ответа.');
           if (!uniqueOptions.has(normalizeGrammarAnswer(item.correctAnswer))) {
             throw new Error('Правильный ответ отсутствует среди вариантов.');
           }
@@ -655,7 +655,7 @@ Return only the JSON object required by the provided response schema.`;
         }
         if (group.type === 'fill_blank') {
           if (!Array.isArray(item.acceptableAnswers)) {
-            throw new Error('ИИ не указал допустимые варианты ответа.');
+            throw new Error('Не указаны допустимые варианты ответа.');
           }
         }
         if (group.type === 'find_mistake' && item.options?.some((option) => !/(?:→|->)/.test(option))) {

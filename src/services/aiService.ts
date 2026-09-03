@@ -203,7 +203,7 @@ Return ONLY a valid JSON object with the following schema:
         } else {
           const errorMessage = await readGeminiError(listRes);
           if (isCredentialError(listRes.status, errorMessage)) {
-            throw new Error('Ключ Gemini отклонён. Создайте новый API-ключ в Google AI Studio и сохраните его в настройках.');
+            throw new Error('Ключ Gemini отклонён. Создайте новый API-ключ в сервисе Google и сохраните его в настройках.');
           }
         }
       } catch (error) {
@@ -340,7 +340,7 @@ Return ONLY a valid JSON object with the following schema:
 
     const data = await res.json();
     const text = data.choices?.[0]?.message?.content;
-    if (!text) throw new Error('Пустой ответ от AI модели');
+    if (!text) throw new Error('Модель вернула пустой ответ');
 
     return this.parseJsonResponse(text);
   }
@@ -412,7 +412,7 @@ Return ONLY a valid JSON object with the following schema:
     // 2. If no API key is provided, use smart fallback distractor pool for missing words
     if (!settings.apiKey || settings.apiKey.trim() === '') {
       if (missing.some(m => !m.initialData)) {
-        errors.push('API-ключ не указан в настройках (⚙️). Варианты ответов сгенерированы по грамматическим категориям. Укажите ключ Gemini/Groq для генерации уникальных вариантов ИИ.');
+        errors.push('API-ключ не указан в настройках (⚙️). Варианты ответов созданы по грамматическим категориям. Укажите ключ Gemini/Groq для умной генерации.');
       }
 
       const fallbackReady: CachedWordData[] = [];
@@ -455,7 +455,7 @@ Return ONLY a valid JSON object with the following schema:
         onProgress(
           results.length,
           total,
-          `ИИ генерирует варианты и синонимы (${results.length}/${total})...`
+          `Генерируем варианты и синонимы (${results.length}/${total})...`
         );
       }
 
@@ -532,7 +532,7 @@ Return ONLY a valid JSON object with the following schema:
         onBatchReady?.(readyInBatch, results.length, total);
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);
-        errors.push(`ИИ запрос: ${errorMsg}`);
+        errors.push(`Ошибка генерации: ${errorMsg}`);
         const fallbackItems: CachedWordData[] = [];
         for (const item of batch) {
           const targetRussian = item.userRussian || item.english;

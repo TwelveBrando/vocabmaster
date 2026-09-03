@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History, Download } from 'lucide-react';
+import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History, Download, Eraser } from 'lucide-react';
 import type { CEFRLevel, DictionaryEntry, UITheme, AISettings } from '../types';
 import { vocabularyService } from '../services/vocabularyService';
 import { CEFR_LEVELS_META } from '../data/cefrDictionary';
@@ -123,7 +123,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const words = vocabularyService.getTestWordsFromVocabulary('all');
     if (words.length === 0) return;
     if (!settings.apiKey?.trim()) {
-      setDownloadError('Сначала добавьте API-ключ AI-провайдера в настройках.');
+      setDownloadError('Сначала добавьте API-ключ провайдера в настройках.');
       return;
     }
 
@@ -150,6 +150,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
+  const handleClearVocabularyContext = () => {
+    if (preparedWords === 0) return;
+    if (!window.confirm('Очистить загруженный контекст? Слова, переводы и статистика останутся.')) return;
+
+    vocabularyService.clearPreparedVocabularyContexts();
+    setDownloadError('');
+    refreshVocabState();
+    onVocabularyPrepared?.();
+  };
+
   return (
     <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-[1550px] flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 animate-fadeIn select-none sm:gap-7 sm:px-10 sm:py-8">
       {/* Top Banner & Main Action Buttons */}
@@ -168,31 +178,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <button
             type="button"
             onClick={() => setIsImportModalOpen(true)}
-            className={`h-11 flex-1 sm:flex-none px-3 sm:px-5 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98 ${
+            className={`h-10 px-2.5 rounded-lg text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${
               theme.isLight
-                ? 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900'
-                : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white'
+                ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                : 'text-white/65 hover:bg-white/[0.08] hover:text-white'
             }`}
           >
             <FileInput className="w-4 h-4 text-emerald-400" />
-            <span>Импорт списком</span>
+            <span>Импорт</span>
           </button>
-
-          {stats.totalWords > 0 && (
-            <button
-              type="button"
-              disabled={Boolean(downloadProgress)}
-              onClick={handleDownloadVocabulary}
-              className={`h-11 flex-1 sm:flex-none px-3 sm:px-5 rounded-xl border text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-98 ${
-                downloadProgress
-                  ? 'cursor-wait opacity-70'
-                  : 'cursor-pointer'
-              } ${theme.isLight ? 'bg-white hover:bg-slate-50 border-slate-300 text-slate-900' : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white'}`}
-            >
-              {downloadProgress ? <Loader2 className="h-4 w-4 animate-spin text-cyan-400" /> : <Download className="h-4 w-4 text-cyan-400" />}
-              <span>{downloadProgress ? `Загружаем ${downloadProgress.processed}/${downloadProgress.total}` : 'Загрузить AI-контекст'}</span>
-            </button>
-          )}
 
           {stats.totalWords > 0 && (
             <button
@@ -206,16 +200,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           )}
         </div>
       </div>
-
-      {downloadProgress && (
-        <div className={`-mt-2 rounded-full h-2 overflow-hidden ${theme.progressTrack}`}>
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`}
-            style={{ width: `${downloadProgress.total ? Math.round((downloadProgress.processed / downloadProgress.total) * 100) : 0}%` }}
-          />
-        </div>
-      )}
-      {downloadError && <div className="-mt-2 text-xs font-semibold text-amber-500">{downloadError}</div>}
 
       {/* Balanced Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -232,15 +216,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
         </div>
 
-        <div className={`${theme.cardBg} ${theme.cardBorder} p-5.5 rounded-2xl shadow-sm flex items-center gap-4`}>
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-            theme.isLight ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-          }`}>
-            <Download className="w-6 h-6" strokeWidth={1.7} />
+        <div className={`${theme.cardBg} ${theme.cardBorder} p-5.5 rounded-2xl shadow-sm flex flex-col justify-between gap-3`}>
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+              theme.isLight ? 'bg-cyan-50 text-cyan-800 border border-cyan-200' : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+            }`}>
+              <Download className="w-6 h-6" strokeWidth={1.7} />
+            </div>
+            <div>
+              <div className={`text-xs font-bold uppercase tracking-wider ${theme.textMuted}`}>Контекст загружен</div>
+              <div className={`text-3xl font-extrabold ${theme.textPrimary}`}>{preparedWords} <span className="text-sm font-semibold opacity-70">из {stats.totalWords}</span></div>
+            </div>
           </div>
-          <div>
-            <div className={`text-xs font-bold uppercase tracking-wider ${theme.textMuted}`}>AI-контекст загружен</div>
-            <div className={`text-3xl font-extrabold ${theme.textPrimary}`}>{preparedWords} <span className="text-sm font-semibold opacity-70">из {stats.totalWords}</span></div>
+          {downloadProgress && (
+            <div className={`rounded-full h-1.5 overflow-hidden ${theme.progressTrack}`}>
+              <div className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`} style={{ width: `${downloadProgress.total ? Math.round((downloadProgress.processed / downloadProgress.total) * 100) : 0}%` }} />
+            </div>
+          )}
+          {downloadError && <div className="text-[11px] font-semibold text-amber-500">{downloadError}</div>}
+          <div className={`flex items-center gap-3 border-t pt-2.5 ${theme.isLight ? 'border-slate-200' : 'border-white/10'}`}>
+            <button type="button" disabled={Boolean(downloadProgress) || stats.totalWords === 0} onClick={handleDownloadVocabulary} className={`flex items-center gap-1.5 text-xs font-bold transition ${downloadProgress ? 'cursor-wait opacity-60' : `${theme.accentText} cursor-pointer hover:opacity-75`}`}>
+              {downloadProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              {downloadProgress ? `${downloadProgress.processed}/${downloadProgress.total}` : 'Загрузить'}
+            </button>
+            <button type="button" disabled={preparedWords === 0 || Boolean(downloadProgress)} onClick={handleClearVocabularyContext} className={`flex items-center gap-1.5 text-xs font-semibold transition ${preparedWords === 0 || downloadProgress ? 'cursor-not-allowed opacity-35' : `${theme.textMuted} cursor-pointer hover:text-rose-500`}`}>
+              <Eraser className="h-3.5 w-3.5" />
+              Очистить
+            </button>
           </div>
         </div>
 
@@ -441,7 +443,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 Слово не найдено в словаре
               </h3>
               <p className={`text-sm mt-1 ${theme.textSecondary}`}>
-                Вы можете добавить его в свой словарный запас с помощью ИИ, который определит точный перевод и уровень CEFR.
+                Можно добавить его в словарный запас с автоматическим определением перевода и уровня CEFR.
               </p>
             </div>
             {searchQuery && (
@@ -452,7 +454,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 className={`px-6 py-3 rounded-xl text-sm font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>{isSearchingAI ? 'ИИ определяет уровень...' : `Добавить «${searchQuery}» через ИИ`}</span>
+                <span>{isSearchingAI ? 'Определяем уровень...' : `Добавить «${searchQuery}» с автопереводом`}</span>
               </button>
             )}
           </div>

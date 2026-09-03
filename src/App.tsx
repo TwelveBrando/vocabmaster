@@ -190,7 +190,7 @@ export function App() {
     setCurrentWordsData([]);
     setPrepErrors([]);
     setIsQuestionLoading(true);
-    setPrepProgress({ processed: 0, total: inputItems.length, message: 'ИИ готовит первую пачку слов...' });
+    setPrepProgress({ processed: 0, total: inputItems.length, message: 'Готовим первую пачку слов...' });
     setAppState('preparing');
 
     try {
@@ -217,7 +217,7 @@ export function App() {
           setPrepProgress({
             processed,
             total,
-            message: processed < total ? 'ИИ готовит следующие слова...' : 'Все слова готовы',
+            message: processed < total ? 'Готовим следующие слова...' : 'Все слова готовы',
           });
           setAppState('testing');
         },

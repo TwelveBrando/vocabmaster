@@ -95,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <FlowButton onClick={onOpenAuth} className="hidden rounded-full border border-white/15 bg-white/[0.08] px-3.5 py-2 text-xs font-medium text-white/80 transition hover:bg-white hover:text-black sm:inline-flex" text="Войти" />
           )}
-          <button type="button" onClick={onOpenSettings} title="Оформление и ИИ" aria-label="Оформление и ИИ" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/[0.08] text-white/80 transition hover:bg-white hover:text-black">
+          <button type="button" onClick={onOpenSettings} title="Оформление и генерация" aria-label="Оформление и генерация" className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/[0.08] text-white/80 transition hover:bg-white hover:text-black">
             <Palette className="h-3.5 w-3.5" strokeWidth={1.8} />
           </button>
           <button type="button" onClick={() => setIsMobileMenuOpen((open) => !open)} aria-label="Открыть навигацию" aria-expanded={isMobileMenuOpen} className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/[0.08] text-white/80 md:hidden">

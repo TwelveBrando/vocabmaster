@@ -38,7 +38,7 @@ export const PreparationScreen: React.FC<PreparationScreenProps> = ({
         Подготовка словарного теста
       </h2>
       <p className={`text-sm max-w-md mb-6 ${theme.textSecondary}`}>
-        {progress.message || 'ИИ подготавливает переводы, контекстные подсказки и варианты ответов...'}
+        {progress.message || 'Подготавливаем переводы, контекстные подсказки и варианты ответов...'}
       </p>
 
       {/* Progress Bar */}

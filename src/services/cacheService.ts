@@ -70,6 +70,10 @@ export const cacheService = {
     );
   },
 
+  removeWord(englishWord: string): void {
+    localStorage.removeItem(CACHE_PREFIX + englishWord.trim().toLowerCase());
+  },
+
   clearCache(): void {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {

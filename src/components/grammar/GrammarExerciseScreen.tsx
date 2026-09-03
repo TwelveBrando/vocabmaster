@@ -358,10 +358,10 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
         <div className="flex items-center gap-3">
           <div
             className="px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 border bg-purple-500/10 border-purple-500/30 text-purple-400 transition-all"
-            title={modelLabel ? `Сгенерировано ИИ: ${modelLabel}` : 'Свежие задания создаются нейросетью'}
+            title={modelLabel ? `Сгенерировано: ${modelLabel}` : 'Свежие задания создаются автоматически'}
           >
             <Bot className="w-3 h-3 text-purple-400" />
-            <span>{modelLabel || (isGeneratingAI ? 'ИИ генерирует' : 'Только ИИ')}</span>
+            <span>{modelLabel || (isGeneratingAI ? 'Генерируем' : 'Новый набор')}</span>
           </div>
 
           <button
@@ -382,7 +382,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
         <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-xs font-bold text-rose-600 dark:text-rose-300 flex items-start gap-2.5 animate-fadeIn">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <div>Ошибка генерации ИИ: {generationError}</div>
+            <div>Ошибка генерации: {generationError}</div>
             <div className="font-normal opacity-85 mt-0.5">
               Заготовки не подставляются: упражнения появятся только после успешного ответа нейросети.
             </div>
