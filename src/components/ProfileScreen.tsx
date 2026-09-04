@@ -47,6 +47,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const resumeDownloadRef = useRef<(() => void) | null>(null);
 
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
+  // While a queue runs, both the card and progress bar must describe the same thing:
+  // context that is actually available for tests, rather than queue attempts.
+  const contextProgressTotal = downloadProgress?.total ?? stats.totalWords;
+  const visiblePreparedWords = Math.min(preparedWords, contextProgressTotal);
 
   const refreshVocabState = () => {
     const vocab = vocabularyService.getUserVocabulary();
@@ -63,12 +67,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         const queryTerm = searchQuery.trim() || (selectedLetter ? selectedLetter.toLowerCase() : '');
         const results = await vocabularyService.searchDictionaryUniversal(queryTerm, 'all', settings);
         if (!isCancelled) {
+          // Datamuse already searches by prefix, but locally saved words used to be
+          // added by a broad "contains" match. Keep an initial-letter filter exact.
+          const letterFiltered = selectedLetter && !searchQuery.trim()
+            ? results.filter(item => item.word.trim().toLowerCase().startsWith(selectedLetter.toLowerCase()))
+            : results;
           if (onlySaved) {
             const vocab = vocabularyService.getUserVocabulary();
             const vocabSet = new Set(vocab.map(v => v.word.toLowerCase()));
-            setDictionaryList(results.filter(item => vocabSet.has(item.word.toLowerCase())));
+            setDictionaryList(letterFiltered.filter(item => vocabSet.has(item.word.toLowerCase())));
           } else {
-            setDictionaryList(results);
+            setDictionaryList(letterFiltered);
           }
         }
       } finally {
@@ -290,19 +299,19 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </div>
             <div>
               <div className={`text-xs font-bold uppercase tracking-wider ${theme.textMuted}`}>Контекст загружен</div>
-              <div className={`text-3xl font-extrabold ${theme.textPrimary}`}>{preparedWords} <span className="text-sm font-semibold opacity-70">из {stats.totalWords}</span></div>
+              <div className={`text-3xl font-extrabold ${theme.textPrimary}`}>{visiblePreparedWords} <span className="text-sm font-semibold opacity-70">из {contextProgressTotal}</span></div>
             </div>
           </div>
           {downloadProgress && (
             <div className={`rounded-full h-1.5 overflow-hidden ${theme.progressTrack}`}>
-              <div className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`} style={{ width: `${downloadProgress.total ? Math.round((downloadProgress.processed / downloadProgress.total) * 100) : 0}%` }} />
+              <div className={`h-full rounded-full transition-all duration-300 ${theme.progressFill}`} style={{ width: `${contextProgressTotal ? Math.round((visiblePreparedWords / contextProgressTotal) * 100) : 0}%` }} />
             </div>
           )}
           {downloadError && <div className="text-[11px] font-semibold text-amber-500">{downloadError}</div>}
           <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-2.5 ${theme.isLight ? 'border-slate-200' : 'border-white/10'}`}>
             <button type="button" disabled={Boolean(downloadProgress) || stats.totalWords === 0} onClick={handleDownloadVocabulary} className={`flex items-center gap-1.5 text-xs font-bold transition ${downloadProgress ? 'cursor-wait opacity-60' : `${theme.accentText} cursor-pointer hover:opacity-75`}`}>
               {downloadProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-              {downloadProgress ? `${downloadProgress.processed}/${downloadProgress.total}` : 'Загрузить'}
+              {downloadProgress ? `${visiblePreparedWords}/${contextProgressTotal}` : 'Загрузить'}
             </button>
             {downloadProgress && (
               <>

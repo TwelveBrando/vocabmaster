@@ -4,10 +4,23 @@ const TOKEN_KEY = 'vocabmaster_web_token';
 // Production injects VITE_API_URL at build time. During local Vite development
 // we use the same-origin proxy below, so the browser never tries localhost:3001.
 const API_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 25_000;
+const WARMUP_TIMEOUT_MS = 30_000;
+let warmupPromise: Promise<void> | null = null;
 export interface CloudUser { id: string; email: string; createdAt: string; }
 export interface TestAttempt { id: string; mode: TestMode; totalQuestions: number; correctAnswers: number; completedAt: number; }
 let token = localStorage.getItem(TOKEN_KEY) || '';
+
+function warmUpApi(): Promise<void> {
+  if (warmupPromise) return warmupPromise;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), WARMUP_TIMEOUT_MS);
+  warmupPromise = fetch(`${API_URL}/health`, { signal: controller.signal })
+    .then(() => undefined)
+    .catch(() => undefined)
+    .finally(() => window.clearTimeout(timeoutId));
+  return warmupPromise;
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const controller = new AbortController();
@@ -23,7 +36,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     return body as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Сервер не ответил за 12 секунд. Проверьте подключение и повторите попытку.');
+      throw new Error('Сервер запускается дольше обычного. Проверьте подключение и повторите попытку.');
     }
     if (error instanceof TypeError) {
       throw new Error('Не удалось подключиться к серверу. Перезапустите локальный сайт и повторите попытку.');
@@ -36,7 +49,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const cloudSyncService = {
   isLoggedIn: () => Boolean(token),
+  warmUp: () => { void warmUpApi(); },
   async signIn(email: string, password: string, register = false): Promise<CloudUser> {
+    await warmUpApi();
     const data = await request<{ token: string; user: CloudUser }>(`/auth/${register ? 'register' : 'login'}`, { method: 'POST', body: JSON.stringify({ email, password }) });
     token = data.token; localStorage.setItem(TOKEN_KEY, token); return data.user;
   },

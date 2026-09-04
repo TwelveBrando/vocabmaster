@@ -93,6 +93,11 @@ export function App() {
   const currentThemeConfig = THEMES[currentTheme];
 
 
+  useEffect(() => {
+    // Wake the serverless API while the app opens, before the user needs the login form.
+    cloudSyncService.warmUp();
+  }, []);
+
   const refreshCounts = useCallback(() => {
     setCachedCount(cacheService.getAllCachedWords().length);
     setVocabCount(vocabularyService.getUserVocabulary().length);
