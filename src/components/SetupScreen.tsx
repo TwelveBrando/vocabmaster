@@ -508,11 +508,11 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({
 
         <FlowButton
           onClick={handleStart}
-          className={`w-full sm:w-auto rounded-2xl px-10 py-4 font-bold text-base shadow-xl transition-all ${theme.primaryButton}`}
+          className={`w-full sm:w-auto rounded-2xl px-4 py-4 sm:px-10 font-bold text-base shadow-xl transition-all ${theme.primaryButton}`}
           text={sourceType === 'vocab_bank'
               ? totalUserWords === 0
                 ? 'Открыть словарь'
-                : `Начать тест (${availableInSelectedLevel} слов)`
+                : <><span className="whitespace-nowrap sm:hidden">Начать тест · {availableInSelectedLevel}</span><span className="hidden sm:inline">Начать тест ({availableInSelectedLevel} слов)</span></>
               : 'Запустить тест'}
         />
       </div>

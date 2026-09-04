@@ -30,6 +30,12 @@ interface AIWordRequest {
   userContext?: string;
 }
 
+export interface AIEnrichmentControl {
+  signal?: AbortSignal;
+  /** Resolves only when the caller resumes a paused batch queue. */
+  waitForResume?: () => Promise<void>;
+}
+
 const normalizeContextPart = (value?: string): string => (value || '')
   .toLowerCase()
   .replace(/[ё]/g, 'е')
@@ -161,7 +167,8 @@ Return ONLY a valid JSON object with the following schema:
 
   private static async queryGemini(
     words: AIWordRequest[],
-    settings: AISettings
+    settings: AISettings,
+    signal?: AbortSignal,
   ): Promise<CachedWordData[]> {
     const apiKey = settings.apiKey;
     const prompt = this.buildPrompt(words);
@@ -184,7 +191,7 @@ Return ONLY a valid JSON object with the following schema:
       try {
         const listRes = await fetch(
           'https://generativelanguage.googleapis.com/v1beta/models',
-          { headers: { 'x-goog-api-key': apiKey }, signal: AbortSignal.timeout(6000) }
+          { headers: { 'x-goog-api-key': apiKey }, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(6000)]) : AbortSignal.timeout(6000) }
         );
         if (listRes.ok) {
           modelListAvailable = true;
@@ -256,7 +263,7 @@ Return ONLY a valid JSON object with the following schema:
           const res = await fetch(url, {
             method: 'POST',
             headers: apiHeaders,
-            signal: AbortSignal.timeout(16000),
+            signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(16000)]) : AbortSignal.timeout(16000),
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
               generationConfig: {
@@ -291,6 +298,7 @@ Return ONLY a valid JSON object with the following schema:
           this.preferredGeminiModel = model;
           return this.parseJsonResponse(text);
         } catch (error) {
+          if (signal?.aborted) throw error;
           const message = error instanceof Error ? error.message : String(error);
           if (message.startsWith('Ключ Gemini')) throw error;
           lastError = `${model}: ${message}`;
@@ -313,7 +321,8 @@ Return ONLY a valid JSON object with the following schema:
     words: AIWordRequest[],
     settings: AISettings,
     endpoint: string,
-    defaultModel: string
+    defaultModel: string,
+    signal?: AbortSignal,
   ): Promise<CachedWordData[]> {
     const model = settings.model || defaultModel;
     const apiKey = settings.apiKey;
@@ -325,6 +334,7 @@ Return ONLY a valid JSON object with the following schema:
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
+      signal,
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: prompt }],
@@ -350,6 +360,7 @@ Return ONLY a valid JSON object with the following schema:
     settings: AISettings,
     onProgress?: (processed: number, total: number, message: string) => void,
     onBatchReady?: (words: CachedWordData[], processed: number, total: number) => void,
+    control?: AIEnrichmentControl,
   ): Promise<{ data: CachedWordData[]; errors: string[] }> {
     const normalizedInput = wordsInput.map(item => {
       if (typeof item === 'string') {
@@ -450,6 +461,9 @@ Return ONLY a valid JSON object with the following schema:
     // 3. Query AI in batches for all missing words to get complete synonyms & clever distractors
     const BATCH_SIZE = 6;
     for (let i = 0; i < missing.length; i += BATCH_SIZE) {
+      if (control?.signal?.aborted) throw new DOMException('Загрузка остановлена', 'AbortError');
+      await control?.waitForResume?.();
+      if (control?.signal?.aborted) throw new DOMException('Загрузка остановлена', 'AbortError');
       const batch = missing.slice(i, i + BATCH_SIZE);
       if (onProgress) {
         onProgress(
@@ -463,27 +477,30 @@ Return ONLY a valid JSON object with the following schema:
         let batchResults: CachedWordData[] = [];
         const readyInBatch: CachedWordData[] = [];
         if (settings.provider === 'gemini') {
-          batchResults = await this.queryGemini(batch, settings);
+          batchResults = await this.queryGemini(batch, settings, control?.signal);
         } else if (settings.provider === 'groq') {
           batchResults = await this.queryGroqOrOpenAI(
             batch,
             settings,
             'https://api.groq.com/openai/v1/chat/completions',
-            'openai/gpt-oss-120b'
+            'openai/gpt-oss-120b',
+            control?.signal,
           );
         } else if (settings.provider === 'openrouter') {
           batchResults = await this.queryGroqOrOpenAI(
             batch,
             settings,
             'https://openrouter.ai/api/v1/chat/completions',
-            settings.model || 'nvidia/nemotron-3.5-lightning:free'
+            settings.model || 'nvidia/nemotron-3.5-lightning:free',
+            control?.signal,
           );
         } else if (settings.provider === 'custom' && settings.baseUrl) {
           batchResults = await this.queryGroqOrOpenAI(
             batch,
             settings,
             `${settings.baseUrl.replace(/\/$/, '')}/chat/completions`,
-            settings.model || 'gpt-3.5-turbo'
+            settings.model || 'gpt-3.5-turbo',
+            control?.signal,
           );
         }
 
@@ -531,6 +548,7 @@ Return ONLY a valid JSON object with the following schema:
         }
         onBatchReady?.(readyInBatch, results.length, total);
       } catch (err: unknown) {
+        if (control?.signal?.aborted) throw err;
         const errorMsg = err instanceof Error ? err.message : String(err);
         errors.push(`Ошибка генерации: ${errorMsg}`);
         const fallbackItems: CachedWordData[] = [];

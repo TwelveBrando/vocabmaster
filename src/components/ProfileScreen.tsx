@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History, Download, Eraser } from 'lucide-react';
+import { Search, Plus, Check, Trash2, BookMarked, Layers, Award, Sparkles, Play, Loader2, FileInput, History, Download, Eraser, Pause, Square, PlayCircle } from 'lucide-react';
 import type { CEFRLevel, DictionaryEntry, UITheme, AISettings } from '../types';
 import { vocabularyService } from '../services/vocabularyService';
 import { CEFR_LEVELS_META } from '../data/cefrDictionary';
@@ -39,8 +39,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [preparedWords, setPreparedWords] = useState(() => vocabularyService.getPreparedVocabularyCount());
   const [downloadProgress, setDownloadProgress] = useState<{ processed: number; total: number } | null>(null);
   const [downloadError, setDownloadError] = useState('');
+  const [isDownloadPaused, setIsDownloadPaused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchInteractedRef = useRef(false);
+  const downloadControllerRef = useRef<AbortController | null>(null);
+  const isDownloadPausedRef = useRef(false);
+  const resumeDownloadRef = useRef<(() => void) | null>(null);
 
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
 
@@ -139,27 +143,76 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       return;
     }
 
+    const controller = new AbortController();
+    downloadControllerRef.current = controller;
+    isDownloadPausedRef.current = false;
+    setIsDownloadPaused(false);
     setDownloadError('');
     setDownloadProgress({ processed: 0, total: words.length });
     try {
-      const { data, errors } = await AIService.fetchWordsData(
+      const { errors } = await AIService.fetchWordsData(
         words,
         settings,
         (processed, total) => setDownloadProgress({ processed, total }),
-        (_batch, processed, total) => {
+        (batch, processed, total) => {
+          // Keep each completed batch even if the user stops the remaining queue.
+          vocabularyService.applyAIEnrichment(batch);
           setPreparedWords(vocabularyService.getPreparedVocabularyCount());
           setDownloadProgress({ processed, total });
         },
+        {
+          signal: controller.signal,
+          waitForResume: () => new Promise<void>(resolve => {
+            if (!isDownloadPausedRef.current) {
+              resolve();
+              return;
+            }
+            resumeDownloadRef.current = resolve;
+          }),
+        },
       );
-      vocabularyService.applyAIEnrichment(data);
       refreshVocabState();
       onVocabularyPrepared?.();
       if (errors.length > 0) setDownloadError(errors[0]);
     } catch (error) {
-      setDownloadError(error instanceof Error ? error.message : String(error));
+      if (controller.signal.aborted) {
+        setDownloadError('Загрузка остановлена. Уже готовый контекст сохранён.');
+      } else {
+        setDownloadError(error instanceof Error ? error.message : String(error));
+      }
     } finally {
-      setDownloadProgress(null);
+      if (downloadControllerRef.current === controller) {
+        downloadControllerRef.current = null;
+        resumeDownloadRef.current = null;
+        isDownloadPausedRef.current = false;
+        setIsDownloadPaused(false);
+        setDownloadProgress(null);
+        refreshVocabState();
+        onVocabularyPrepared?.();
+      }
     }
+  };
+
+  const handleToggleDownloadPause = () => {
+    if (!downloadControllerRef.current) return;
+    if (isDownloadPausedRef.current) {
+      isDownloadPausedRef.current = false;
+      setIsDownloadPaused(false);
+      resumeDownloadRef.current?.();
+      resumeDownloadRef.current = null;
+    } else {
+      isDownloadPausedRef.current = true;
+      setIsDownloadPaused(true);
+    }
+  };
+
+  const handleStopDownload = () => {
+    const controller = downloadControllerRef.current;
+    if (!controller) return;
+    isDownloadPausedRef.current = false;
+    resumeDownloadRef.current?.();
+    resumeDownloadRef.current = null;
+    controller.abort();
   };
 
   const handleClearVocabularyContext = () => {
@@ -246,12 +299,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </div>
           )}
           {downloadError && <div className="text-[11px] font-semibold text-amber-500">{downloadError}</div>}
-          <div className={`flex items-center gap-3 border-t pt-2.5 ${theme.isLight ? 'border-slate-200' : 'border-white/10'}`}>
+          <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-2.5 ${theme.isLight ? 'border-slate-200' : 'border-white/10'}`}>
             <button type="button" disabled={Boolean(downloadProgress) || stats.totalWords === 0} onClick={handleDownloadVocabulary} className={`flex items-center gap-1.5 text-xs font-bold transition ${downloadProgress ? 'cursor-wait opacity-60' : `${theme.accentText} cursor-pointer hover:opacity-75`}`}>
               {downloadProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
               {downloadProgress ? `${downloadProgress.processed}/${downloadProgress.total}` : 'Загрузить'}
             </button>
-            <button type="button" disabled={preparedWords === 0 || Boolean(downloadProgress)} onClick={handleClearVocabularyContext} className={`flex items-center gap-1.5 text-xs font-semibold transition ${preparedWords === 0 || downloadProgress ? 'cursor-not-allowed opacity-35' : `${theme.textMuted} cursor-pointer hover:text-rose-500`}`}>
+            {downloadProgress && (
+              <>
+                <button type="button" onClick={handleToggleDownloadPause} className={`flex items-center gap-1.5 text-xs font-semibold transition ${theme.textMuted} cursor-pointer hover:opacity-75`}>
+                  {isDownloadPaused ? <PlayCircle className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+                  {isDownloadPaused ? 'Продолжить' : 'Пауза'}
+                </button>
+                <button type="button" onClick={handleStopDownload} className="flex items-center gap-1.5 text-xs font-semibold text-rose-500 transition hover:opacity-75 cursor-pointer">
+                  <Square className="h-3.5 w-3.5 fill-current" />
+                  Остановить
+                </button>
+              </>
+            )}            <button type="button" disabled={preparedWords === 0 || Boolean(downloadProgress)} onClick={handleClearVocabularyContext} className={`flex items-center gap-1.5 text-xs font-semibold transition ${preparedWords === 0 || downloadProgress ? 'cursor-not-allowed opacity-35' : `${theme.textMuted} cursor-pointer hover:text-rose-500`}`}>
               <Eraser className="h-3.5 w-3.5" />
               Очистить
             </button>
