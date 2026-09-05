@@ -13,20 +13,18 @@ import {
   ListFilter,
   PenTool,
   AlertCircle,
-  Bot
 } from 'lucide-react';
-import type { UITheme, AISettings } from '../../types';
+import type { UITheme } from '../../types';
 import type { GrammarLecture, GrammarExercise, GrammarExerciseType } from '../../types/grammar';
 import { grammarAnswersMatch, grammarService } from '../../services/grammarService';
+import { generateLocalGrammarExercises } from '../../services/localGrammarGenerator';
 import { THEMES } from '../../styles/themes';
 
 interface GrammarExerciseScreenProps {
   currentTheme: UITheme;
-  settings: AISettings;
   lecture: GrammarLecture;
   onBackToLecture: () => void;
   onBackToHub: () => void;
-  onOpenSettings: () => void;
 }
 
 function isAcceptedFillAnswer(exercise: GrammarExercise, answer: string): boolean {
@@ -36,15 +34,13 @@ function isAcceptedFillAnswer(exercise: GrammarExercise, answer: string): boolea
 
 export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   currentTheme,
-  settings,
   lecture,
   onBackToLecture,
   onBackToHub,
-  onOpenSettings,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
 
-  // Exercise sets state (5 + 5 + 5 = 15)
+  // Exercise sets state (7 + 7 + 7 = 21)
   const [exerciseSets, setExerciseSets] = useState<{
     multipleChoice: GrammarExercise[];
     fillBlank: GrammarExercise[];
@@ -72,7 +68,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   });
 
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [modelLabel, setModelLabel] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [generationSuccess, setGenerationSuccess] = useState<string | null>(null);
@@ -80,12 +76,6 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   const generationControllerRef = useRef<AbortController | null>(null);
   const generationRunRef = useRef(0);
   const successTimerRef = useRef<number | null>(null);
-  const settingsRef = useRef(settings);
-
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
-
   const resetQuiz = useCallback(() => {
     setCurrentIndex(0);
     setSelectedOption(null);
@@ -109,22 +99,20 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
     setModelLabel(null);
     setGenerationError(null);
     setGenerationSuccess(null);
-    setIsGeneratingAI(true);
+    setIsGenerating(true);
 
     try {
-      // Defer the actual fetch by one task. React StrictMode can then run its development-only
-      // setup/cleanup probe without sending a duplicate request to the provider.
+      // Defer history mutation until the StrictMode setup/cleanup probe has finished.
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
       if (controller.signal.aborted) return;
-      const result = await grammarService.generateLiveExercises(lecture, settingsRef.current, { signal: controller.signal });
+      const result = generateLocalGrammarExercises(lecture.id);
       if (generationRunRef.current !== runId || controller.signal.aborted) return;
-      setExerciseSets(result);
-      setModelLabel(result.modelName);
-      const seconds = (result.elapsedMs / 1000).toFixed(1);
+      setExerciseSets({ multipleChoice: result.multipleChoice, fillBlank: result.fillBlank, findMistake: result.findMistake });
+      setModelLabel('Практика');
       setGenerationSuccess(
         automatic
-          ? `15 свежих заданий готовы — ${result.modelName}, ${seconds} с`
-          : `Новый набор готов — ${result.modelName}, ${seconds} с`,
+          ? '21 задание готово'
+          : result.recycled ? 'Новый набор готов. Часть пройденного материала вернулась для повторения.' : 'Новый набор из 21 задания готов',
       );
       successTimerRef.current = window.setTimeout(() => setGenerationSuccess(null), 4_000);
     } catch (error) {
@@ -133,12 +121,11 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
         setGenerationError(error instanceof Error ? error.message : String(error));
       }
     } finally {
-      if (generationRunRef.current === runId) setIsGeneratingAI(false);
+      if (generationRunRef.current === runId) setIsGenerating(false);
     }
   }, [lecture, resetQuiz]);
 
-  // A fresh request starts as soon as this screen is mounted. The cleanup also makes React
-  // StrictMode safe: its development-only remount cancels the first request before starting anew.
+  // Generate once on entry; cancelled mounts must not consume history.
   useEffect(() => {
     void runGeneration(true);
     return () => {
@@ -212,7 +199,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
         const fillScore = logs.fillBlank.filter(l => l.isCorrect).length;
         const findMistakeScore = logs.findMistake.filter(l => l.isCorrect).length;
 
-        grammarService.recordExerciseScore(lecture.subtopicId, choiceScore, fillScore, findMistakeScore);
+        grammarService.recordExerciseScore(lecture.subtopicId, choiceScore, fillScore, findMistakeScore, totalQuestionsCount);
         setIsCompleted(true);
       }
     } else {
@@ -235,8 +222,23 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
     setActiveTab('multiple_choice');
   };
 
-  const handleGenerateFreshAI = () => {
+  const handleGenerateFresh = () => {
     void runGeneration(false);
+  };
+
+  const handleMoreOfThisType = () => {
+    const key = activeTab === 'multiple_choice' ? 'multipleChoice' : activeTab === 'fill_blank' ? 'fillBlank' : 'findMistake';
+    try {
+      const otherIds = Object.entries(exerciseSets).filter(([name]) => name !== key).flatMap(([, list]) => list.map(exercise => exercise.id));
+      const next = generateLocalGrammarExercises(lecture.id, Math.random, { onlyType: activeTab, excludeIds: otherIds });
+      setExerciseSets(previous => ({ ...previous, [key]: next[key] }));
+      setLogs(previous => ({ ...previous, [key]: [] }));
+      moveToTab(activeTab);
+      setGenerationError(null);
+      setGenerationSuccess('Новое упражнение готово. Счёт этого вида начинается заново.');
+    } catch (error) {
+      setGenerationError(error instanceof Error ? error.message : String(error));
+    }
   };
 
   // Score statistics
@@ -300,17 +302,17 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
               }`}
             >
               <RotateCcw className="w-4 h-4" />
-              <span>Повторить эти 15 заданий</span>
+              <span>Повторить этот набор</span>
             </button>
 
             <button
               type="button"
-              disabled={isGeneratingAI}
-              onClick={handleGenerateFreshAI}
+              disabled={isGenerating}
+              onClick={handleGenerateFresh}
               className={`px-5 py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98 ${theme.primaryButton}`}
             >
               <Sparkles className="w-4 h-4 animate-pulse" />
-              <span>{isGeneratingAI ? 'Генерация 15 заданий...' : 'Сгенерировать новые (15 шт)'}</span>
+              <span>{isGenerating ? 'Подготовка заданий...' : 'Сгенерировать новые (21 шт)'}</span>
             </button>
           </div>
 
@@ -341,7 +343,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   return (
     <div className="w-full max-w-3xl mx-auto px-4 sm:px-8 py-5 flex flex-col gap-6 h-full flex-1 min-h-0 overflow-y-auto select-none animate-fadeIn relative z-10 font-sans">
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBackToLecture}
@@ -355,24 +357,24 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
           <span>К лекции</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <div
             className="px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 border bg-purple-500/10 border-purple-500/30 text-purple-400 transition-all"
             title={modelLabel ? `Сгенерировано: ${modelLabel}` : 'Свежие задания создаются автоматически'}
           >
-            <Bot className="w-3 h-3 text-purple-400" />
-            <span>{modelLabel || (isGeneratingAI ? 'Генерируем' : 'Новый набор')}</span>
+            <BookOpen className="w-3 h-3 text-purple-400" />
+            <span>{modelLabel || (isGenerating ? 'Генерируем' : 'Новый набор')}</span>
           </div>
 
           <button
             type="button"
-            disabled={isGeneratingAI}
-            onClick={handleGenerateFreshAI}
-            title="Сгенерировать 15 совершенно новых заданий по этой теме"
+            disabled={isGenerating}
+            onClick={handleGenerateFresh}
+            title="Подготовить новый набор из 21 задания по этой теме"
             className="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${isGeneratingAI ? 'animate-spin' : ''}`} />
-            <span>{isGeneratingAI ? 'Генерация...' : 'Новые 15 заданий'}</span>
+            <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+            <span>{isGenerating ? 'Генерация...' : 'Новый набор · 21'}</span>
           </button>
         </div>
       </div>
@@ -384,14 +386,11 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
           <div className="flex-1">
             <div>Ошибка генерации: {generationError}</div>
             <div className="font-normal opacity-85 mt-0.5">
-              Заготовки не подставляются: упражнения появятся только после успешного ответа нейросети.
+              Не удалось собрать набор. Попробуйте снова или вернитесь к лекции.
             </div>
             <div className="flex flex-wrap gap-3 mt-2">
-              <button type="button" onClick={handleGenerateFreshAI} className="underline font-black cursor-pointer">
-                Повторить запрос
-              </button>
-              <button type="button" onClick={onOpenSettings} className="underline font-black cursor-pointer">
-                Открыть настройки API
+              <button type="button" onClick={handleGenerateFresh} className="underline font-black cursor-pointer">
+                Попробовать снова
               </button>
             </div>
           </div>
@@ -419,40 +418,40 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
         <button
           type="button"
           disabled
-          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
+          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
             activeTab === 'multiple_choice'
               ? `${theme.primaryButton} shadow-sm`
               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <ListFilter className="w-3.5 h-3.5" />
-          <span>1. Тест (5)</span>
+          <span>1. Тест (7)</span>
         </button>
 
         <button
           type="button"
           disabled
-          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
+          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
             activeTab === 'fill_blank'
               ? `${theme.primaryButton} shadow-sm`
               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <PenTool className="w-3.5 h-3.5" />
-          <span>2. Ввод формы (5)</span>
+          <span>2. Ввод (7)</span>
         </button>
 
         <button
           type="button"
           disabled
-          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
+          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
             activeTab === 'find_mistake'
               ? `${theme.primaryButton} shadow-sm`
               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <AlertCircle className="w-3.5 h-3.5" />
-          <span>3. Поиск ошибки (5)</span>
+          <span>3. Ошибка (7)</span>
         </button>
       </div>
 
@@ -559,6 +558,10 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
               <div className="relative">
                 <input
                   type="text"
+                  autoComplete="off"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  name="grammar-answer"
                   disabled={isAnswerSubmitted}
                   value={textInput}
                   onChange={(e) => {
@@ -570,7 +573,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
                       else handleNext();
                     }
                   }}
-                  placeholder="Введите правильную форму слова..."
+                  placeholder="Введите ответ по условию..."
                   className={`w-full px-5 py-4 rounded-2xl text-base font-bold transition-all shadow-inner focus:outline-none ${
                     isAnswerSubmitted
                       ? currentAnswerIsCorrect
@@ -610,6 +613,13 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
             </div>
           )}
 
+          {isAnswerSubmitted && isLastInTab && (
+            <div className={`rounded-xl p-3 border ${theme.cardBorder} flex flex-col gap-2`}>
+              <p className={`text-sm ${theme.textSecondary}`}>Упражнение завершено. Можно продолжить или пройти ещё семь заданий этого вида с новым счётом.</p>
+              <button type="button" onClick={handleMoreOfThisType} className={`px-4 py-2 rounded-xl text-sm font-bold cursor-pointer ${theme.primaryButton}`}>Ещё 7 заданий этого вида</button>
+            </div>
+          )}
+
           {/* Action Button: Check / Next */}
           <div className="flex items-center justify-end gap-3 mt-2 pt-4 border-t border-slate-200/50 dark:border-white/10">
             {!isAnswerSubmitted ? (
@@ -640,7 +650,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
                       ? 'К виду 2 (Ввод формы) →' 
                       : activeTab === 'fill_blank' 
                       ? 'К виду 3 (Поиск ошибки) →' 
-                      : 'Завершить все 15 заданий'
+                      : 'Завершить практику'
                     : 'Следующее задание'}
                 </span>
                 <ChevronRight className="w-4 h-4" />
@@ -650,15 +660,15 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
         </div>
       ) : (
         <div className={`${theme.cardBg} ${theme.cardBorder} rounded-3xl p-8 sm:p-12 text-center border shadow-lg flex flex-col items-center gap-4`}>
-          {isGeneratingAI ? (
+          {isGenerating ? (
             <>
               <div className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center">
                 <Sparkles className="w-7 h-7 text-purple-400 animate-spin" />
               </div>
               <div>
-                <div className={`text-lg font-black ${theme.textPrimary}`}>Создаю 15 новых заданий</div>
+                <div className={`text-lg font-black ${theme.textPrimary}`}>Создаю 21 новое задание</div>
                 <p className={`text-sm mt-1 ${theme.textSecondary}`}>
-                  Запрос к нейросети уже отправлен. Обычно это занимает несколько секунд; при высокой нагрузке — до 45 секунд.
+                  Подбираем задания по теме лекции.
                 </p>
               </div>
             </>
@@ -666,14 +676,11 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
             <>
               <AlertCircle className="w-9 h-9 text-rose-400" />
               <div className={`text-sm font-bold ${theme.textSecondary}`}>
-                Задания не получены. Проверьте API-ключ или повторите запрос.
+                Не удалось подготовить задания. Попробуйте снова.
               </div>
               <div className="flex flex-wrap justify-center gap-3">
-                <button type="button" onClick={handleGenerateFreshAI} className={`px-5 py-2.5 rounded-xl text-xs font-black ${theme.primaryButton}`}>
+                <button type="button" onClick={handleGenerateFresh} className={`px-5 py-2.5 rounded-xl text-xs font-black ${theme.primaryButton}`}>
                   Повторить генерацию
-                </button>
-                <button type="button" onClick={onOpenSettings} className="px-5 py-2.5 rounded-xl text-xs font-black border border-current/20 text-slate-500 cursor-pointer">
-                  Настройки API
                 </button>
               </div>
             </>

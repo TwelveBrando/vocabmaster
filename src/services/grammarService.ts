@@ -267,6 +267,7 @@ export class GrammarService {
       ...topic,
       subtopics: topic.subtopics.map((subtopic) => ({
         ...subtopic,
+        exercisesCount: 21,
         readTimeMinutes: subtopic.readTimeMinutes + EXPANDED_LECTURE_MINUTES,
       })),
     }));
@@ -313,10 +314,10 @@ export class GrammarService {
     choiceScore: number,
     fillScore: number,
     findMistakeScore: number,
+    maxPossible = 21,
   ): GrammarUserProgress {
     const current = this.getUserProgress();
     const totalScore = choiceScore + fillScore + findMistakeScore;
-    const maxPossible = 15;
 
     current.passedExercises[subtopicId] = {
       choiceScore,

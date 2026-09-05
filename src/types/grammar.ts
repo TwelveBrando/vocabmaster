@@ -42,7 +42,7 @@ export interface GrammarLecture {
     }[];
   }[];
 
-  // 3 sets of 5 exercises (15 exercises total per lecture)
+  // Authored examples for lecture explanations; live practice is generated separately (3 × 7).
   exercises: {
     multipleChoice: GrammarExercise[]; // 5 items
     fillBlank: GrammarExercise[];       // 5 items

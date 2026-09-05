@@ -14,6 +14,7 @@ interface GrammarLectureScreenProps {
   currentTheme: UITheme;
   lecture: GrammarLecture;
   onBackToHub: () => void;
+  onStartExercises: () => void;
   onNavigateToLecture: (subtopicId: string) => void;
 }
 
@@ -22,6 +23,7 @@ export const GrammarLectureScreen: React.FC<GrammarLectureScreenProps> = ({
   lecture,
   onBackToHub,
   onNavigateToLecture,
+  onStartExercises,
 }) => {
   const theme = THEMES[currentTheme] || THEMES.cyber_oasis;
 
@@ -192,6 +194,12 @@ export const GrammarLectureScreen: React.FC<GrammarLectureScreenProps> = ({
             </section>
           ))}
         </div>
+
+        <section className={`p-5 rounded-2xl border ${theme.cardBorder} ${theme.cardBg} flex flex-col gap-3`}>
+          <h2 className={`text-lg font-black ${theme.textPrimary}`}>Закрепите материал</h2>
+          <p className={`text-sm ${theme.textSecondary}`}>Три упражнения по семь заданий: выбор ответа, ввод формы и исправление ошибки. После прохождения можно собрать новый набор.</p>
+          <button type="button" onClick={onStartExercises} className={`px-5 py-3 rounded-xl font-bold cursor-pointer ${theme.primaryButton}`}>Перейти к упражнениям · 21 задание</button>
+        </section>
 
         {/* Lecture Footer & Exercises Trigger */}
         <footer className="border-t pt-8 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 select-none border-slate-200/50 dark:border-white/10">

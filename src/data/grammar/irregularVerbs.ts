@@ -4,7 +4,7 @@ type Verb = [base: string, past: string, participle: string, russian: string];
 
 // A practical complete reference: the standard high-frequency irregular verbs,
 // including variants learners commonly meet in British and American English.
-const VERBS: Verb[] = [
+export const VERBS: Verb[] = [
   ['arise','arose','arisen','возникать'], ['awake','awoke','awoken','просыпаться'], ['be','was/were','been','быть'], ['bear','bore','borne/born','нести; рождать'], ['beat','beat','beaten','бить'], ['become','became','become','становиться'], ['begin','began','begun','начинать'], ['bend','bent','bent','гнуть'], ['bet','bet','bet','держать пари'], ['bind','bound','bound','связывать'],
   ['bite','bit','bitten','кусать'], ['bleed','bled','bled','кровоточить'], ['blow','blew','blown','дуть'], ['break','broke','broken','ломать'], ['breed','bred','bred','разводить'], ['bring','brought','brought','приносить'], ['broadcast','broadcast','broadcast','транслировать'], ['build','built','built','строить'], ['burn','burned/burnt','burned/burnt','гореть; жечь'], ['burst','burst','burst','лопаться'],
   ['buy','bought','bought','покупать'], ['cast','cast','cast','бросать; распределять роли'], ['catch','caught','caught','ловить'], ['choose','chose','chosen','выбирать'], ['cling','clung','clung','цепляться'], ['come','came','come','приходить'], ['cost','cost','cost','стоить'], ['creep','crept','crept','ползти; красться'], ['cut','cut','cut','резать'], ['deal','dealt','dealt','иметь дело; раздавать'],

@@ -9,6 +9,7 @@ import { ResultScreen } from './components/ResultScreen';
 import { SettingsModal } from './components/SettingsModal';
 import LiquidMetalHero from './components/ui/liquid-metal-hero';
 import { LiquidMetal, liquidMetalPresets } from '@paper-design/shaders-react';
+import { GrammarExerciseScreen } from './components/grammar/GrammarExerciseScreen';
 import { GrammarHubScreen } from './components/grammar/GrammarHubScreen';
 import { GrammarLectureScreen } from './components/grammar/GrammarLectureScreen';
 import { AuthModal } from './components/AuthModal';
@@ -57,7 +58,7 @@ export function App() {
   const scrollWrapperRef = useRef<HTMLElement>(null);
   const scrollContentRef = useRef<HTMLDivElement>(null);
   const [appState, setAppState] = useState<
-    'setup' | 'profile' | 'preparing' | 'testing' | 'results' | 'grammar_hub' | 'grammar_lecture'
+    'setup' | 'profile' | 'preparing' | 'testing' | 'results' | 'grammar_hub' | 'grammar_lecture' | 'grammar_exercise'
   >('setup');
   const [settings, setSettings] = useState<AISettings>(() => settingsService.getSettings());
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -399,7 +400,7 @@ export function App() {
     }
   };
 
-  const isGrammarActive = appState === 'grammar_hub' || appState === 'grammar_lecture';
+  const isGrammarActive = appState === 'grammar_hub' || appState === 'grammar_lecture' || appState === 'grammar_exercise';
 
   if (isWelcomeScreenOpen) {
     return (
@@ -513,6 +514,17 @@ export function App() {
             lecture={currentGrammarLecture}
             onBackToHub={() => setAppState('grammar_hub')}
             onNavigateToLecture={handleSelectSubtopic}
+            onStartExercises={() => setAppState('grammar_exercise')}
+          />
+        )}
+
+        {appState === 'grammar_exercise' && currentGrammarLecture && (
+          <GrammarExerciseScreen
+            key={currentGrammarLecture.id}
+            currentTheme={currentTheme}
+            lecture={currentGrammarLecture}
+            onBackToLecture={() => setAppState('grammar_lecture')}
+            onBackToHub={() => setAppState('grammar_hub')}
           />
         )}
 
