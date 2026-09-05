@@ -32,6 +32,18 @@ function isAcceptedFillAnswer(exercise: GrammarExercise, answer: string): boolea
     || (exercise.acceptableAnswers || []).some((acceptable) => grammarAnswersMatch(answer, acceptable));
 }
 
+interface ExerciseTabState {
+  currentIndex: number;
+  selectedOption: string | null;
+  textInput: string;
+  isAnswerSubmitted: boolean;
+  showHint: boolean;
+}
+const emptyTabState = (): ExerciseTabState => ({ currentIndex: 0, selectedOption: null, textInput: '', isAnswerSubmitted: false, showHint: false });
+const initialTabStates = (): Record<GrammarExerciseType, ExerciseTabState> => ({ multiple_choice: emptyTabState(), fill_blank: emptyTabState(), find_mistake: emptyTabState() });
+const tabOrder: GrammarExerciseType[] = ['multiple_choice', 'fill_blank', 'find_mistake'];
+const exerciseKeys = { multiple_choice: 'multipleChoice', fill_blank: 'fillBlank', find_mistake: 'findMistake' } as const;
+
 export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   currentTheme,
   lecture,
@@ -48,13 +60,16 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   }>({ multipleChoice: [], fillBlank: [], findMistake: [] });
 
   const [activeTab, setActiveTab] = useState<GrammarExerciseType>('multiple_choice');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
-  // User answers state
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [textInput, setTextInput] = useState('');
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
-  const [showHint, setShowHint] = useState(false);
+  const [tabStates, setTabStates] = useState(initialTabStates);
+  const { currentIndex, selectedOption, textInput, isAnswerSubmitted, showHint } = tabStates[activeTab];
+  function updateTabState<K extends keyof ExerciseTabState>(key: K, value: React.SetStateAction<ExerciseTabState[K]>) {
+    setTabStates(previous => ({ ...previous, [activeTab]: { ...previous[activeTab], [key]: typeof value === 'function' ? value(previous[activeTab][key]) : value } }));
+  }
+  const setCurrentIndex = (value: React.SetStateAction<number>) => updateTabState('currentIndex', value);
+  const setSelectedOption = (value: string | null) => updateTabState('selectedOption', value);
+  const setTextInput = (value: string) => updateTabState('textInput', value);
+  const setIsAnswerSubmitted = (value: boolean) => updateTabState('isAnswerSubmitted', value);
+  const setShowHint = (value: boolean) => updateTabState('showHint', value);
 
   // Score logs for each type
   const [logs, setLogs] = useState<{
@@ -77,11 +92,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   const generationRunRef = useRef(0);
   const successTimerRef = useRef<number | null>(null);
   const resetQuiz = useCallback(() => {
-    setCurrentIndex(0);
-    setSelectedOption(null);
-    setTextInput('');
-    setIsAnswerSubmitted(false);
-    setShowHint(false);
+    setTabStates(initialTabStates());
     setIsCompleted(false);
     setLogs({ multipleChoice: [], fillBlank: [], findMistake: [] });
     setActiveTab('multiple_choice');
@@ -152,12 +163,12 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
 
   const moveToTab = (tab: GrammarExerciseType) => {
     setActiveTab(tab);
-    setCurrentIndex(0);
-    setSelectedOption(null);
-    setTextInput('');
-    setIsAnswerSubmitted(false);
-    setShowHint(false);
   };
+  const allCompleted = tabOrder.every(tab => exerciseSets[exerciseKeys[tab]].length > 0 && logs[exerciseKeys[tab]].length === exerciseSets[exerciseKeys[tab]].length);
+  const activePosition = tabOrder.indexOf(activeTab);
+  const nextIncompleteTab = [1, 2, 3].map(offset => tabOrder[(activePosition + offset) % 3])
+    .find(tab => logs[exerciseKeys[tab]].length < exerciseSets[exerciseKeys[tab]].length);
+  const nextTabLabel = nextIncompleteTab === 'multiple_choice' ? 'К виду 1 (Выбор ответа) →' : nextIncompleteTab === 'fill_blank' ? 'К виду 2 (Ввод формы) →' : 'К виду 3 (Поиск ошибки) →';
 
   const handleSelectOption = (opt: string) => {
     if (isAnswerSubmitted) return;
@@ -184,23 +195,16 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
   };
 
   const handleNext = () => {
+    if (!isAnswerSubmitted) return;
     if (isLastInTab) {
-      if (activeTab === 'multiple_choice') {
-        moveToTab('fill_blank');
-      } else if (activeTab === 'fill_blank') {
-        moveToTab('find_mistake');
-      } else {
-        const allCompleted = logs.multipleChoice.length === exerciseSets.multipleChoice.length
-          && logs.fillBlank.length === exerciseSets.fillBlank.length
-          && logs.findMistake.length === exerciseSets.findMistake.length;
-        if (!allCompleted) return;
-
+      if (allCompleted) {
         const choiceScore = logs.multipleChoice.filter(l => l.isCorrect).length;
         const fillScore = logs.fillBlank.filter(l => l.isCorrect).length;
         const findMistakeScore = logs.findMistake.filter(l => l.isCorrect).length;
-
         grammarService.recordExerciseScore(lecture.subtopicId, choiceScore, fillScore, findMistakeScore, totalQuestionsCount);
         setIsCompleted(true);
+      } else if (nextIncompleteTab) {
+        moveToTab(nextIncompleteTab);
       }
     } else {
       setCurrentIndex(prev => prev + 1);
@@ -211,16 +215,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
     }
   };
 
-  const handleRestart = () => {
-    setCurrentIndex(0);
-    setSelectedOption(null);
-    setTextInput('');
-    setIsAnswerSubmitted(false);
-    setShowHint(false);
-    setIsCompleted(false);
-    setLogs({ multipleChoice: [], fillBlank: [], findMistake: [] });
-    setActiveTab('multiple_choice');
-  };
+  const handleRestart = resetQuiz;
 
   const handleGenerateFresh = () => {
     void runGeneration(false);
@@ -233,7 +228,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
       const next = generateLocalGrammarExercises(lecture.id, Math.random, { onlyType: activeTab, excludeIds: otherIds });
       setExerciseSets(previous => ({ ...previous, [key]: next[key] }));
       setLogs(previous => ({ ...previous, [key]: [] }));
-      moveToTab(activeTab);
+      setTabStates(previous => ({ ...previous, [activeTab]: emptyTabState() }));
       setGenerationError(null);
       setGenerationSuccess('Новое упражнение готово. Счёт этого вида начинается заново.');
     } catch (error) {
@@ -417,8 +412,10 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
       }`}>
         <button
           type="button"
-          disabled
-          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
+          disabled={isGenerating || !exerciseSets[exerciseKeys['multiple_choice']].length}
+          onClick={() => moveToTab('multiple_choice')}
+          aria-pressed={activeTab === 'multiple_choice'}
+          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait disabled:opacity-50 ${
             activeTab === 'multiple_choice'
               ? `${theme.primaryButton} shadow-sm`
               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -430,8 +427,10 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
 
         <button
           type="button"
-          disabled
-          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
+          disabled={isGenerating || !exerciseSets[exerciseKeys['fill_blank']].length}
+          onClick={() => moveToTab('fill_blank')}
+          aria-pressed={activeTab === 'fill_blank'}
+          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait disabled:opacity-50 ${
             activeTab === 'fill_blank'
               ? `${theme.primaryButton} shadow-sm`
               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -443,8 +442,10 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
 
         <button
           type="button"
-          disabled
-          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-default ${
+          disabled={isGenerating || !exerciseSets[exerciseKeys['find_mistake']].length}
+          onClick={() => moveToTab('find_mistake')}
+          aria-pressed={activeTab === 'find_mistake'}
+          className={`min-w-0 flex-1 py-2.5 px-1 rounded-xl text-[10px] sm:text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:cursor-wait disabled:opacity-50 ${
             activeTab === 'find_mistake'
               ? `${theme.primaryButton} shadow-sm`
               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -645,13 +646,7 @@ export const GrammarExerciseScreen: React.FC<GrammarExerciseScreenProps> = ({
                 className={`px-6 py-3 rounded-2xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer active:scale-98 ${theme.primaryButton}`}
               >
                 <span>
-                  {isLastInTab 
-                    ? activeTab === 'multiple_choice' 
-                      ? 'К виду 2 (Ввод формы) →' 
-                      : activeTab === 'fill_blank' 
-                      ? 'К виду 3 (Поиск ошибки) →' 
-                      : 'Завершить практику'
-                    : 'Следующее задание'}
+                  {isLastInTab ? allCompleted ? 'Завершить практику' : nextTabLabel : 'Следующее задание'}
                 </span>
                 <ChevronRight className="w-4 h-4" />
               </button>
